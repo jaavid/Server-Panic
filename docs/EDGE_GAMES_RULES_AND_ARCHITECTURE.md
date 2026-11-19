@@ -79,7 +79,7 @@ The production public URL must not be used for automated browser screenshot swee
 - Arrange in-account uptime review/monitoring that doesn't generate fake play events. Technical health checks should be limited to \`/healthz\` in a way confirmed not to count as fake visits; if uncertain, avoid automated external polls and use deployment/panel monitoring.
 - Validate real Edge request/response behavior, allowed methods, origin limitations and asset caching. For GLB textures, verify supported asset delivery; the existing single-file worker is insufficient as proof for 3D build.
 
-## 6. Compliance QA checklist (hard release gates)
+## 6. Compliance QA checklist before submission
 
 - [ ] No forbidden content or insensitive jokes in all Persian/English text, assets, audio, cinematic intro and AI-generated content.
 - [ ] No ads, sponsor assets, promotional CTA, outbound marketing links in public game.
@@ -89,10 +89,14 @@ The production public URL must not be used for automated browser screenshot swee
 - [ ] No secret in client bundle; edge routes enforce method/content type/body size and timeout; DB credential least privilege.
 - [ ] Production target has no test bots, public-URL load tests or fabricated traffic.
 - [ ] Original/license provenance for all art, logos, fonts, audio and video; independent project brand checked.
-- [ ] Real Arvan Edge deploy tested and remains accessible under registered URL through 14 Azar.
+- [ ] Test the deployed game at the exact Arvan Edge URL to be submitted. Record the availability and rollback plan for that URL.
 - [ ] No fake "connected to Arvan database/AIaaS" messages if those integrations are not yet real.
 - [ ] Game works when score API or AIaaS is down.
 - [ ] Review organizer's actual rules in their browser before submission, since official page was not tool-readable.
+
+### After submission
+
+- [ ] Keep the game accessible at the same registered URL through 14 Azar 1405. Close this item after the period ends using the deployment and availability records from section 5.
 
 ## 7. Codex execution additions
 
