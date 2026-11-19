@@ -110,7 +110,7 @@ Service health derives from **the actual simulation**; no fake randomized health
 - **Failure:** streaming fully unavailable for 30 continuous seconds, OR trust reaches zero and remains zero 15 seconds, OR all critical processing paths stay unavailable 25 seconds. All timers are configurable and **must be tuned with playtests**.
 - **Recoverability:** a single node failure is never an instant failure; optional backup allows recovery. Warnings precede hard failure.
 - **Scoring (draft):** packets processed + active stream uptime points + successfully mitigated incidents + small combo bonus − downtime/queue penalties. No score rewards for deliberately causing incidents.
-- **Results:** successful/failed show; score; stream uptime percentage; incidents solved; best score per mission; number of drone deployments; replay; optional 1–3-star rating. Store locally for MVP only, no leaderboard backend.
+- **Results:** successful/failed show; score; stream uptime percentage; incidents solved; best score per mission; number of drone deployments; replay; optional 1–3-star rating. Store locally for offline gameplay; an **optional competition-mode, privacy-preserving Edge-verified score + anonymous leaderboard** is proposed after the playable slice. See [Edge Games rules](../EDGE_GAMES_RULES_AND_ARCHITECTURE.md).
 - **City feedback:** good stream = synchronized projection and warm animated crowds; degradation = buffering/flicker and visible restlessness; recovery = return of synchronized lighting and a small hopeful cheer. Avoid flashing effects that may cause photosensitivity.
 
 ## 7. UX & accessibility
@@ -120,7 +120,7 @@ Service health derives from **the actual simulation**; no fake randomized health
 - **Input:** tap first; 44–48px active targets; selection and targeting cancelable; camera pan must not be interpreted as a zone click; mouse and keyboard support on desktop.
 - **Legibility:** always show a text/icon fallback for heat and availability; pause, mute and reduced motion; critical messages persist until state clears.
 - **Cognitive budget:** one new mechanic per phase; no more than two simultaneously actionable decisions in the first minute; avoid tutorial walls.
-- **No forced registration. No live external API requests within the session.**
+- **No registration or player personal-data collection.** Core gameplay must work without a remote API; a small optional Arvan Edge challenge/verified-score API may run at start/end if proven compatible, without transmitting identifying data. No ads, trackers or external promotional links.
 
 ## 8. Sound & narrative tone
 
@@ -138,11 +138,17 @@ Service health derives from **the actual simulation**; no fake randomized health
 
 ## 10. Future progression (not in first slice)
 
-- Multiple missions/chapters; expanding neighborhoods; operator/drone upgrades; non-pay-to-win cosmetics; daily challenges and optional leaderboard after a verified backend spec.
+- Multiple missions/chapters; expanding neighborhoods; operator/drone upgrades; non-pay-to-win cosmetics and daily challenges remain future features. The **competition-scoped anonymous Edge leaderboard** is addressed separately as an optional release enhancement, not progression.
 - Each chapter should reuse the world model but have a distinct **player decision**, not only new scenery.
 - No campaign UI unlock loop, economy, accounts, multiplayer, live AI generation or mandatory online requests in v0.2.
 
-## 11. Open decisions / assumptions register
+## 11. Edge Games competition requirements
+
+The owner provided these additional constraints: some game logic on Arvan Edge (score validation, Arvan database leaderboard and optional AIaaS content) can improve judging; all violence, political/sexual content and ethnic/religious/gender insults are forbidden; advertisements and collection of player personal information are forbidden; fabricated visitors are disqualifying; original commercial-game logos/music/art must not be used; the registered competition URL must remain available through 14 Azar 1405; ownership remains with creator while Arvan may showcase it.
+
+The proposed implementation is **optional edge-side score replay verification**, then **anonymous leaderboard** if Arvan Edge→DB connectivity and privacy are confirmed. AIaaS is a non-essential stretch goal with curated text, safeguards and local fallback. All new components stay outside the deterministic gameplay loop and may not compromise the no-login browser experience. The public competition page was not tool-readable on 2026-11-19; final terms must be verified directly. See [Competition rules and architecture](../EDGE_GAMES_RULES_AND_ARCHITECTURE.md).
+
+## 12. Open decisions / assumptions register
 
 | ID | Status | Assumption needing validation | Test or decision trigger |
 |---|---|---|---|
@@ -159,7 +165,7 @@ Service health derives from **the actual simulation**; no fake randomized health
 | OD-11 | OPEN | character/personality count and crowd visual richness | frame-time/atlas budget after art import |
 | OD-12 | OPEN | source assets and permission for the cinematic opening video | trace source, rights and version; never assume it can ship publicly |
 
-## 12. Definition of done for GDD v0.2
+## 13. Definition of done for GDD v0.2
 
 This GDD is a **design baseline**, not a final production contract. A vertical slice is complete only when one full Concert Night run is playable on 360px mobile, player decisions causally impact city visuals, there are both recoverable crises and a meaningful fail state, all controls work, automated tests pass, and the deployment checklist is validated. See [acceptance matrix](../production/VERTICAL_SLICE_CONCERT.md).
 
