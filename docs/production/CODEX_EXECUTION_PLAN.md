@@ -31,7 +31,7 @@ Read before coding:
 | P2 | Connect ConcertSimulation to Three.js 3-zone city + HUD | P1 and P0 spike | Playable 420s scenario with world-space raycast taps, 4 actions and results (placeholder 3D assets allowed) |
 | P3 | Blender city pipeline + 3 visual city states + drone animation | P2 interface contract | Real generated art / atlases / license manifests; no broken hitboxes |
 | P4 | Visual/game feel polish + Sorkhab-inspired RTL HUD | P2 + P3 | Honest city feedback, clear mobile controls and audio/motion options |
-| P5 | Real mobile QA, balance and Arvan Edge packaging | P4 | Full test suite and performance, verified deployment or explicitly blocked |
+| P5 | Real mobile QA, balance, verified Arvan Edge deployment + optional anonymous score validation/leaderboard | P4 | Full test suite, accessible deployed game at unchanged registered URL, no prohibited content/privacy/traffic; Edge extensions only after real feasibility |
 
 **Parallelism:** Asset technical artist can build scripts in P3 branch during P2, but must use agreed atlas manifest/coordinate interface and be rebased after P2. GDD document owner reviews changes with every PR. Avoid parallel edits to GameSimulation.ts or balance.ts.
 
@@ -88,7 +88,9 @@ Record asset manifest (scene anchors, geometry budget, LOD, texture/lightmaps, c
 
 - Run CI and browser screenshot baselines; on-device Android FPS/memory, 7-minute end-to-end runs, slow-network loading.
 - Verify new build size vs Arvan Edge worker limitations; if bundled worker exceeds constraints, research verified static asset mechanism and document new deployment ADR.
-- Publish only with approved account access; test a real arvanedge.ir URL and verify official Edge Games participation terms. Do not fabricate deployment URL.
+- Run a private technical spike for edge-side seeded run validation, cryptographic challenge, deterministic action replay and (only if supported) Arvan DB score storage. Validate anonymous payload and minimal retention. Keep API optional in the gameplay flow; see docs/EDGE_GAMES_RULES_AND_ARCHITECTURE.md.
+- Optional post-gate AIaaS: curated, reviewed, fixed-schema nonpolitical short scenario flavor text without player input or personally identifying data. Never make gameplay depend on generation.
+- Publish only with approved account access; test a real arvanedge.ir URL and verify official Edge Games participation terms. Do not fabricate deployment URL. Register the **exact stable URL by 9 Azar 1405** (announcement, reconfirm) and keep it live through **14 Azar 1405**. Use private staging/local URLs for automated browser/load tests so no fake public competition visits are generated.
 - Check independent brand identity, licenses and credits.
 - Publish competition build tag only if all vertical slice release gates green.
 
@@ -156,6 +158,15 @@ Needs project-owner approval (yes/no):
 ~~~
 
 No milestone is "done" merely because a screenshot looks right or TypeScript compiles. Vertical-slice signoff requires the checklist in VERTICAL_SLICE_CONCERT.md.
+
+## Competition rules / no-go checklist
+
+- No violence, political or sexual content, ethnic/religious/gender insults; technical incidents must remain nonviolent.
+- No ads, promotional links, signup, names/emails/IP/UA storage, trackers or user fingerprints.
+- No commercial-game logos, soundtracks or graphics without appropriate rights; no Arvan official branding implied for this independent game.
+- Never generate artificial public traffic. Stage automated tests separately and inspect production logs/privacy defaults.
+- Keep the submitted address stable through result announcement on **14 Azar 1405**; see docs/EDGE_GAMES_RULES_AND_ARCHITECTURE.md.
+- Prioritize shipping a complete playable 3D mission by the announced **9 Azar** entry deadline; Edge features cannot delay a viable contest entry.
 
 ## Known planning risks
 
