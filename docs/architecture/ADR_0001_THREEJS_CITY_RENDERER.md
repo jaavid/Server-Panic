@@ -10,7 +10,7 @@ The visual reference is a layered Iranian courtyard and futuristic city rendered
 
 ### External facts
 - Phaser 4 remains a **2D engine**, per the Phaser team: https://phaser.io/news/2026/07/no-you-didn-t-miss-a-3d-update . Phaser AE is a separate non-open-source product with different APIs, not an upgrade to the Phaser npm package.
-- Three.js supports Blender-produced glTF with \`GLTFLoader\` and compressed textures via \`KTX2Loader\`, world-space selection with \`Raycaster\`, and instancing to reduce draw calls: https://threejs.org/docs/pages/GLTFLoader.html ; https://threejs.org/docs/pages/Raycaster.html ; https://threejs.org/docs/pages/InstancedMesh.html .
+- Three.js supports Blender-produced glTF with `GLTFLoader` and compressed textures via `KTX2Loader`, world-space selection with `Raycaster`, and instancing to reduce draw calls: https://threejs.org/docs/pages/GLTFLoader.html ; https://threejs.org/docs/pages/Raycaster.html ; https://threejs.org/docs/pages/InstancedMesh.html .
 - PlayCanvas is a valid standalone engine with WebGL2/WebGPU, scene/component framework and editor: https://developer.playcanvas.com/user-manual/engine/ . Babylon.js is a capable full 3D engine: https://www.babylonjs.com/specifications/ .
 - OpenAI's game building report uses a TypeScript/Vite/Three.js approach, with deterministic scenario tests, debug hooks and measured optimizations: https://developers.openai.com/blog/how-to-build-games-with-astra .
 
@@ -18,15 +18,15 @@ The visual reference is a layered Iranian courtyard and futuristic city rendered
 
 **NEW ARVAN-SHAHR WORLD:** Three.js + TypeScript (strict) + Vite, running **WebGLRenderer (WebGL 2)** as the default initially; WebGPU renderer is a later evidence-based option after benchmarks. Do not force WebGPU as a day-one requirement.
 
-**GAMEPLAY:** retain pure TypeScript simulation systems, seeded RNG, Vitest, typed commands and events, with no engine import inside the domain layer. Move the 7-minute mission to a separate \`ConcertSimulation\` module with a fixed tick.
+**GAMEPLAY:** retain pure TypeScript simulation systems, seeded RNG, Vitest, typed commands and events, with no engine import inside the domain layer. Move the 7-minute mission to a separate `ConcertSimulation` module with a fixed tick.
 
-**3D ASSET PIPELINE:** Blender procedural modeling and source \`.blend\` files; GLB/glTF scene exports; low polygon counts, lightmaps/baked lighting, compressed textures (KTX2 where measurable), instanced repeated props, LOD/culling. Blender still may render high-quality stills for introduction/cutscenes; those images are not clickable runtime geometry.
+**3D ASSET PIPELINE:** Blender procedural modeling and source `.blend` files; GLB/glTF scene exports; low polygon counts, lightmaps/baked lighting, compressed textures (KTX2 where measurable), instanced repeated props, LOD/culling. Blender still may render high-quality stills for introduction/cutscenes; those images are not clickable runtime geometry.
 
 **UI:** native DOM/CSS overlay with RTL Persian and Sorkhab-inspired micro-kit, not an embedded heavy UI framework. Preserve touch sizing, accessibility, safe areas and local score storage.
 
 **LEGACY CLASSIC MODE:** preserve existing Phaser 3 + Canvas2D classic game behind a separate entry and code-split loading path. Do **not** render Phaser and Three simultaneously. No hard rewrite until Three.js vertical proof-of-concept passes.
 
-**CAMERA/INPUT:** \`PerspectiveCamera\` (narrow field of view) or \`OrthographicCamera\` selected after a visual comparison using actual GLB assets; constrained pan, zoom and fixed azimuth/elevation for 3/4 appearance. \`Raycaster\` from normalized pointer coordinates; 3 named camera bookmarks + focus transition. No general orbit controls/free camera in MVP.
+**CAMERA/INPUT:** `PerspectiveCamera` (narrow field of view) or `OrthographicCamera` selected after a visual comparison using actual GLB assets; constrained pan, zoom and fixed azimuth/elevation for 3/4 appearance. `Raycaster` from normalized pointer coordinates; 3 named camera bookmarks + focus transition. No general orbit controls/free camera in MVP.
 
 **DEPLOYMENT:** output remains browser HTML+JS+assets. Arvan Edge runtime restrictions/asset serving must be verified in the account. Do not assume a larger GLB fits inside the existing single-file Edge worker.
 
