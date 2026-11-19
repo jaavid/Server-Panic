@@ -16,7 +16,7 @@ The game must be **fun without knowing what CDN or ingest means**; the optional 
 | DATACENTER | modular navy server district with cyan data tracks; 3 distinct nodes | tap node -> route demand / drone targeting | processing queues, heat, failure, recovery |
 | CONTROL | small city command center and panel | inspect one or two alerts / choose failover or priority | mission command dispatcher / cooldowns |
 
-Cinematography: 3/4 camera with one overview and three bookmarks; slow non-intrusive moves, short camera intro that is skippable. World appears continuous even if composed of 2.5D layered imagery. No free roam.
+Cinematography: true Three.js 3D city with constrained 3/4 camera, overview and three bookmarks, world-space camera tween and drone flight; slow non-intrusive moves and skippable intro. No free roam. The P0 technical spike must validate camera picking and mobile FPS. See [ADR-0001](../architecture/ADR_0001_THREEJS_CITY_RENDERER.md).
 
 ## 3. Gameplay minimum
 
@@ -62,7 +62,7 @@ No horizontal overflow; all tap targets >=44px; Persian text and digits; crisp i
 
 **Must ship:** 1 layered city composition; 1 Iranian courtyard/stage; 1 distant dark infrastructure district; 3 rack characters × meaningful health/heat/offline states; 1 repair drone; 1 small control center; 3 critical city state variations (normal/buffering/blackout/recovery); one brief original atmosphere loop and procedural alerts or properly licensed audio; menu/tutorial/HUD/results; 1 offline-safe poster in case introductory video fails.
 
-**Asset reproducibility:** Blender scripts specify version, seed, camera, lighting, frame names, output dirs and atlas packing. Source projects editable when actually generated. Record provenance and license. If no Blender, preserve fallback sprites and mark missing renders as missing.
+**Asset reproducibility:** Blender scripts specify version, seed, camera, lighting, GLB/glTF exports, object anchors and hit volumes, lightmaps and texture compression. Atlases remain for classic sprites/UI. Source projects editable when actually generated. Record provenance and license. If no Blender, preserve fallback sprites and mark missing renders as missing.
 
 **Art constraint:** cinematic screenshot is visual direction, not automatically an interactive scene nor permission to publish its video. Do not block gameplay on large cinematic video download.
 
@@ -89,7 +89,7 @@ Named deterministic scenario fixtures (all functional):
 
 - [ ] npm ci, TypeScript build, lint, tests, browser build all green **on CI** with recorded logs.
 - [ ] New mission available without breaking existing 90-second classic mode.
-- [ ] All 3 zones are actionable; selections/hit areas follow camera transform.
+- [ ] All 3 zones are actionable via Three.js Raycaster; selections/hit areas remain correct across camera positions and aspect ratios.
 - [ ] At least 3 required incidents, 4 real player actions, 2 meaningful decisions.
 - [ ] At least one outage has fail and successful recovery routes.
 - [ ] City display/crowd responds causally to streaming status; not timeline-only animation.
