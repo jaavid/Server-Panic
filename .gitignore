@@ -6,3 +6,5 @@ test-results/
 *.blend1
 .cache/
 .DS_Store
+
+/.studio-private/
