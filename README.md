@@ -4,7 +4,7 @@
 
 ## Play immediately (offline, no dependencies)
 
-Open **`dist-offline/play.html`** in a browser. It is one self-contained HTML file (~385 KiB) with JavaScript, CSS, and illustrated WebP art embedded. No local HTTP server or npm is required. This is the **Canvas2D fallback build**, not the Phaser build.
+Open **`play.html`** from the repository root in a browser (committed playable Canvas2D build). Running `npm run build:offline` regenerates it at **`dist-offline/play.html`**. It is one self-contained HTML file (~385 KiB) with JavaScript, CSS, and illustrated WebP art embedded. No local HTTP server or npm is required. This is the **Canvas2D fallback build**, not the Phaser build.
 
 The project **primary source is Phaser 3 + TypeScript + Vite**. The alternate Canvas2D renderer shares the same real gameplay simulation, score management, sound, UI and assets, making the game playable in offline/dependency-restricted environments. See `docs/TEST_RESULTS.md` for tested and untested capabilities.
 
@@ -53,15 +53,16 @@ src/styles/game.css             Original responsive RTL design system
 assets/source/                  Original editable SVG illustration sources
 assets/blender/                 Original procedural 3D Blender Python source
 assets/generated/               Editable .blend files once Blender is run
-public/assets/                 Generated PNG/WebP sprites and atlas/JSON
+public/assets/                  Committed runtime atlas, floor and icon; `npm run assets:2d` regenerates all sprites
 scripts/                       Asset generation, packaging, offline and edge builds
 scripts/smoke_offline.py        Browser E2E screenshots and critical/results/replay validation
 tests/unit/                    Vitest mechanics tests
 tests/node/                    Dependency-free Node test equivalents
 tests/e2e/                     Playwright spec (when npm dependencies are available)
-dist-offline/play.html          Verified playable self-contained delivery
+play.html                       Committed playable self-contained HTML delivery
+ dist-offline/play.html          Rebuild output (generated, gitignored)
 dist-edge/server-panic.worker.js Arvan Edge fetch-event entry (not yet deployed)
-screenshots/                   Real Chromium capture outputs
+screenshots/                    Optimized WebP versions of real Chromium captures
 ```
 
 The `GameSimulation` handles requests, route eligibility, server temperature/status/failure, cooling cooldown, difficulty ramps, scoring and win/loss. It emits typed events. Phaser and Canvas2D adapters consume the exact same snapshots/events; neither owns gameplay rules. Animations use pre-rendered sprites. The runtime has no third-party network requests.
@@ -107,11 +108,11 @@ node scripts/test_edge_worker.mjs
 python3 scripts/smoke_offline.py
 ```
 
-The snapshot tests generate all screens in `screenshots/` at 360×800, 390×844, 768×1024 and 1440×900. See `docs/TEST_RESULTS.md`.
+The snapshot tests generate all screens in `screenshots/` (this repository includes selected WebP-compressed captures) at 360×800, 390×844, 768×1024 and 1440×900. See `docs/TEST_RESULTS.md`.
 
 ## Arvan Edge deployment
 
-The **competition requirement is Edge Computing deployment**. The project includes a genuine fetch-event Edge Worker bundle at `dist-edge/server-panic.worker.js`, based on Arvan's documented `addEventListener('fetch', ...)` model, that serves the entire playable game as one HTML response. This avoids assuming generic CDN/static hosting qualifies. Not uploaded, unverified against your account's script-size/resource limits. **See `docs/ARVAN_DEPLOYMENT.md` for official sources, actual steps and open questions.**
+The **competition requirement is Edge Computing deployment**. The project includes scripts to generate a genuine fetch-event Edge Worker bundle at `dist-edge/server-panic.worker.js`, based on Arvan's documented `addEventListener('fetch', ...)` model, that serves the entire playable game as one HTML response. This avoids assuming generic CDN/static hosting qualifies. Not uploaded, unverified against your account's script-size/resource limits. **See `docs/ARVAN_DEPLOYMENT.md` for official sources, actual steps and open questions.**
 
 ## Controls and accessibility
 
