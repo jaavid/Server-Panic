@@ -14,7 +14,8 @@ Read before coding:
 - **Repository:** jaavid/Server-Panic. Inspect current main and uncommitted work first. Do not overwrite parallel human/Codex changes or force-push.
 - **Branch per milestone:** feature/arvanshahr-p0-baseline, feature/arvanshahr-p1-simulation, etc. Each subsequent PR branches from updated main **after merge** to avoid duplicate changes.
 - **Small verifiable PRs.** Do not combine simulation refactor, full Blender assets and deployment in one PR.
-- **Engine direction — accepted ADR-0001:** Three.js (WebGL2 first) + strict TypeScript/Vite for the new 3D city; preserve Phaser 3/Canvas2D as legacy Classic mode, with no simultaneous render loops. Vitest, Playwright and Blender Python remain. No React, backend or third-party live services. See [ADR-0001](../architecture/ADR_0001_THREEJS_CITY_RENDERER.md).
+- **Engine direction — accepted ADR-0001:** Three.js (WebGL2 first) + strict TypeScript/Vite for the new 3D city; preserve Phaser 3/Canvas2D as legacy Classic mode, with no simultaneous render loops. Vitest, Playwright and Blender Python remain. Keep React and third-party live services out of the game client. See [ADR-0001](../architecture/ADR_0001_THREEJS_CITY_RENDERER.md).
+- **Offline gameplay:** Both modes start, finish and save scores locally without a backend. The optional P5 competition service may verify anonymous runs and publish a leaderboard after the Edge feasibility and privacy checks pass. Any later AIaaS content follows the separate review and offline fallback requirements in P5.
 - **Preserve legacy game:** Classic Server Panic remains playable throughout. Create new mission mode; avoid destructive renames until parity.
 - **No mock success:** simulation metrics must be real; screenshots from actual render, not a conceptual design presented as implementation.
 - **Measure before claim:** npm ci / npm test / npm run build / npm run lint / npm run test:ui, real browser captures, relevant FPS and memory metrics. Report exactly what passed and failed.
@@ -31,7 +32,7 @@ Read before coding:
 | P2 | Connect ConcertSimulation to Three.js 3-zone city + HUD | P1 and P0 spike | Playable 420s scenario with world-space raycast taps, 4 actions and results (placeholder 3D assets allowed) |
 | P3 | Blender city pipeline + 3 visual city states + drone animation | P2 interface contract | Real generated art / atlases / license manifests; no broken hitboxes |
 | P4 | Visual/game feel polish + Sorkhab-inspired RTL HUD | P2 + P3 | Honest city feedback, clear mobile controls and audio/motion options |
-| P5 | Real mobile QA, balance and Arvan Edge packaging | P4 | Full test suite and performance, verified deployment or explicitly blocked |
+| P5 | Real mobile QA, balance, verified Arvan Edge deployment + optional anonymous score validation/leaderboard | P4 | Full test suite, accessible deployed game at unchanged registered URL, no prohibited content/privacy/traffic; Edge extensions only after real feasibility |
 
 **Parallelism:** Asset technical artist can build scripts in P3 branch during P2, but must use agreed atlas manifest/coordinate interface and be rebased after P2. GDD document owner reviews changes with every PR. Avoid parallel edits to GameSimulation.ts or balance.ts.
 
@@ -88,7 +89,9 @@ Record asset manifest (scene anchors, geometry budget, LOD, texture/lightmaps, c
 
 - Run CI and browser screenshot baselines; on-device Android FPS/memory, 7-minute end-to-end runs, slow-network loading.
 - Verify new build size vs Arvan Edge worker limitations; if bundled worker exceeds constraints, research verified static asset mechanism and document new deployment ADR.
-- Publish only with approved account access; test a real arvanedge.ir URL and verify official Edge Games participation terms. Do not fabricate deployment URL.
+- Run a private technical spike for edge-side seeded run validation, cryptographic challenge, deterministic action replay and (only if supported) Arvan DB score storage. Validate anonymous payload and minimal retention. Keep API optional in the gameplay flow; see docs/EDGE_GAMES_RULES_AND_ARCHITECTURE.md.
+- Optional post-gate AIaaS: curated, reviewed, fixed-schema nonpolitical short scenario flavor text without player input or personally identifying data. Never make gameplay depend on generation.
+- Publish only with approved account access; test a real arvanedge.ir URL and verify official Edge Games participation terms. Do not fabricate deployment URL. Register the **exact stable URL by 9 Azar 1405** (announcement, reconfirm) and keep it live through **14 Azar 1405**. Use private staging/local URLs for automated browser/load tests so no fake public competition visits are generated.
 - Check independent brand identity, licenses and credits.
 - Publish competition build tag only if all vertical slice release gates green.
 
@@ -156,6 +159,15 @@ Needs project-owner approval (yes/no):
 ~~~
 
 No milestone is "done" merely because a screenshot looks right or TypeScript compiles. Vertical-slice signoff requires the checklist in VERTICAL_SLICE_CONCERT.md.
+
+## Competition rules / no-go checklist
+
+- No violence, political or sexual content, ethnic/religious/gender insults; technical incidents must remain nonviolent.
+- No ads, promotional links, signup, names/emails/IP/UA storage, trackers or user fingerprints.
+- No commercial-game logos, soundtracks or graphics without appropriate rights; no Arvan official branding implied for this independent game.
+- Never generate artificial public traffic. Stage automated tests separately and inspect production logs/privacy defaults.
+- Keep the submitted address stable through result announcement on **14 Azar 1405**; see docs/EDGE_GAMES_RULES_AND_ARCHITECTURE.md.
+- Prioritize shipping a complete playable 3D mission by the announced **9 Azar** entry deadline; Edge features cannot delay a viable contest entry.
 
 ## Known planning risks
 

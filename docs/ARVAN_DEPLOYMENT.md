@@ -1,6 +1,6 @@
 # Server Panic / ArvanCloud Edge Computing Deployment
 
-Last researched: **2026-11-19**. Not deployed: no credentials or live Arvan tenant were provided. This document distinguishes confirmed official information from account-specific unknowns.
+Last researched: **2026-11-19**. Not deployed: no credentials or live Arvan tenant were provided. This document distinguishes confirmed official information from account-specific unknowns. **Competition checklist:** [Edge Games rules and architecture](EDGE_GAMES_RULES_AND_ARCHITECTURE.md).
 
 ## What was verified in official documentation
 
@@ -39,9 +39,18 @@ Routes:
 - We **did not confirm the maximum code/bundle upload size, memory/CPU execution limits, JavaScript support profile, account quota, or free plan limits**. A ~399 kB bundled worker is small compared with a full JS app but still needs an actual upload test.
 - Fetch handler compatibility was validated against official source examples and locally in Node. It is **not** a remote Arvan deployment test.
 - The primary Phaser/Vite `dist/` contains separate assets. Arvan's page mentions uploading built files, but it does not conclusively specify multi-file static asset mapping for the chosen plan. Hence we deliberately use one genuine, self-contained worker bundle, not unsupported automatic Vite dist hosting.
-- We have not verified Arvan provides durable KV, storage bindings, or database services for a scoreboard. This MVP only uses browser localStorage.
+- We have not verified how Arvan Edge can connect to a suitable Arvan database, or whether secure storage/bindings, crypto and quotas support the proposed verification service. The currently deployed artifact uses only browser localStorage; **Edge leaderboard and score validation are plans, not present features**.
 - Caching, compression, custom routes, HTTPS, mobile reachability and competition acceptance need to be confirmed on the deployed URL.
 - If Arvan rejects the bundled worker due to size, consider smaller artwork, lossless HTML minification, or an **officially-supported** static asset binding/route after checking the active service docs; do not silently substitute generic object storage + CDN for Edge Computing.
+
+## Competition release obligations
+
+- The registration deadline in Arvan's public announcement is **9 Azar 1405**. The user-provided rules require the **same published registered URL to remain accessible through 14 Azar 1405**. Re-check current terms on the competition site before submitting.
+- Do not route artificial visitor traffic, bots, automated public Playwright screenshots or load tests to the registered URL. Use localhost/private staging; investigate whether health checks might affect official counts.
+- No user signup, names, email, phone, persistent IDs, IP/user-agent storage, ads, promotional links or third-party analytics. Review automatic provider access logging separately.
+- No violence, political/sexual messages, discriminatory insults or unlicensed commercial game logos/music/art. Avoid official Arvan logos or implying official ownership for an independent game.
+- Any future score API must validate scores using deterministic replay in Edge, with ephemeral signed challenges and no trusted client score. Database access and AIaaS integration must be proven before claiming availability. See [competition rules](EDGE_GAMES_RULES_AND_ARCHITECTURE.md).
+- Confirm registered hostname, rollback, HTTPS/SSL and actual availability remain in place through results announcement.
 
 ## Security
 

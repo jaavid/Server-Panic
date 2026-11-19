@@ -145,7 +145,7 @@ These are provisional contract shapes. Before implementation choose exact precis
 5. Stream-uptime accumulation uses actual simulation time, not number of frames.
 6. Same seed + command sequence + tick schedule yields byte-equivalent canonical snapshots.
 
-**Persistence:** localStorage holds schema-versioned results per mission; future remote scores behind an interface, but no backend in MVP. No runtime AI calls.
+**Persistence & optional Edge extension:** localStorage holds schema-versioned results per mission. The competition build may add Arvan Edge challenge issuance, deterministic command-log replay and verified scores with an anonymous DB leaderboard, behind isolated interfaces and only after real API/privacy feasibility checks. This is not required for local gameplay. No runtime AI calls in the core simulation; AIaaS is an optional curated-content adapter. See [competition rules](../EDGE_GAMES_RULES_AND_ARCHITECTURE.md).
 
 ## 6. Camera and world rendering
 
@@ -191,9 +191,9 @@ Implement debug API only with explicit dev/test flag and enforce no import in pr
 ## 9. Explicit decisions deferred
 
 - Runtime Three.js for the city — selected by ADR-0001, subject to the P0 mobile technical-spike acceptance gate. Do not replace the Classic Phaser entry until the new scene passes.
-- Multiplayer, real-time viewer counts, network APIs, online leaderboard, campaign save/sync, monetization — outside first slice.
+- Multiplayer, real-time viewer counts, general network APIs, campaign save/sync and monetization remain outside first slice. A narrowly scoped, **privacy-preserving optional score validation/anonymous leaderboard on Arvan Edge** is a competition feature, not a general player-account backend.
 - Official Arvan tokens/fonts/assets — must verify distribution rights; Sorkhab UI guidance is not permission to use logos.
-- Production Arvan Edge bundle layout — must be tested on target account.
+- Production Arvan Edge bundle layout, crypto APIs, credential handling and database access — must be tested on target account. Never persist IP, user agent or stable player identifiers; never emit fake competition traffic. Required public URL remains reachable through 14 Azar 1405.
 
 ## 10. ADR review trigger
 
