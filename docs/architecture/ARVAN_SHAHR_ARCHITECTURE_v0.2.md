@@ -5,9 +5,9 @@ Related: [GDD v0.2](../gdd/ARVAN_SHAHR_GDD_v0.2.md) · [Vertical slice](../produ
 
 ## 1. Decision
 
-Evolve the currently playable Server Panic Phaser 3 + TypeScript/Vite codebase **incrementally**. Preserve its deterministic game simulation, sprite/Blender pipeline and known-working Canvas2D fallback; introduce a mission-scoped domain simulation, three-zone city view and scenario scripting. The city will **look three-dimensional** through authored/pre-rendered 2.5D layers, but run in Phaser (not runtime WebGL 3D meshes).
+Evolve Server Panic **incrementally** while adopting the engine decision in [ADR-0001](ADR_0001_THREEJS_CITY_RENDERER.md). Preserve the deterministic TypeScript simulation and existing Phaser/Canvas2D Classic mode. Implement the new interactive Arvan-Shahr city with Three.js real-time 3D, constrained 3/4 camera, world-space hit testing, and optimized Blender GLB assets.
 
-This avoids a risky engine rewrite and keeps the mobile browser first. A true Three.js runtime 3D camera is an **explicit later ADR** if gameplay genuinely requires free rotation and the 2.5D prototype fails visual objectives.
+This avoids a risky rewrite of gameplay logic and lets the city have genuine depth, occlusion and positional drone flight without maintaining multiple baked projections. Confirm feasibility in a small mobile 3D P0 spike before moving any game logic.
 
 ## 2. Existing code — verified on main
 
@@ -28,7 +28,7 @@ flowchart TD
   Cmd --> Sim["Mission Simulation (fixed-step, seeded)"]
   Director["Mission Timeline / Incident Director"] --> Sim
   Sim --> Events["Typed Game Events + immutable snapshots"]
-  Events --> Render["Phaser City Renderer"]
+  Events --> Render["Three.js City Renderer"]
   Events --> HUD["HUD Presenter"]
   Events --> Sound["Audio / FX presenter"]
   Render --> Input["Zone hit-testing / Camera adapter"]
@@ -61,7 +61,7 @@ src/
       WorldStateProjector.ts # translate domain state to visible world cues
     renderers/
       PhaserRenderer.ts     # existing classic renderer retained
-      CityPhaserRenderer.ts # new layered city scene
+      CityThreeRenderer.ts  # Three.js-based city scene for the new mission
       CanvasRenderer.ts     # existing classic fallback retained
     ui/
       MissionController.ts
@@ -124,7 +124,7 @@ These are provisional contract shapes. Before implementation choose exact precis
 
 ## 5. Simulation architecture
 
-**Fixed timestep:** deterministic 50ms logical steps (20Hz) for mission simulation, decoupled from Phaser render FPS. Input commands stamped in tick order. Consume accumulated real time with a max catch-up budget and a documented policy for background/tab suspension. Do not silently use rendered frame count as mission time.
+**Fixed timestep:** deterministic 50ms logical steps (20Hz) for mission simulation, decoupled from Three.js render FPS. Input commands stamped in tick order. Consume accumulated real time with a max catch-up budget and a documented policy for background/tab suspension. Do not silently use rendered frame count as mission time.
 
 **Independent systems:**
 - **TrafficDirector:** seeded, scheduled demand per service; bounded burst size and grace intervals.
@@ -152,7 +152,7 @@ These are provisional contract shapes. Before implementation choose exact precis
 Use **one city tableau** composed of independently optimized layers: backdrop/mountains; distant modular city; datacenter midground; courtyard/concert foreground; control-center highlight/overlay; FX and HUD. Build clickable zone polygons or bounding volumes bound to model coordinates; do not use raw pixel guesses tied to one aspect ratio.
 
 - Three camera bookmarks: overview, concert, datacenter/control. Smooth ~250–400ms pan with collision-free UI anchor zones; buttons always work while camera animates (or animation cancels input).
-- Zoom limited to pre-approved ranges where no sprite becomes excessively blurry; 3/4 visual perspective is baked in Blender outputs.
+- Zoom/pan limited to approved world-space bounds. Choose orthographic or narrow-FOV perspective based on visual tests with actual GLB geometry; the city is true 3D, not a baked projection.
 - World and HUD are separate coordinate systems. Fit mobile with clipped world view and a distinct persistent HUD; no squeezed wide-city image.
 - Texture manifests label layer, depth, anchor, scale, hit area, atlas frame and license/provenance.
 - For opening video: optional compressed short cinematic on menu only, with poster fallback and immediate skip; do not autoplay audio before gesture.
@@ -160,7 +160,7 @@ Use **one city tableau** composed of independently optimized layers: backdrop/mo
 ## 7. Rendering and performance
 
 - Budget targets to validate: interactive under ~4s on a representative midrange Android 4G connection; active play smooth at >=30 FPS, aim 45–60; initial compressed assets ideally <=6 MB; no uncontrolled particle production.
-- Lazy load city detail for zoomed regions; deterministic animation states in render adapter, avoid per-frame DOM reflow. Cap DPR (e.g. at 2) as in existing renderer; measure GPU memory.
+- Lazy load GLB zone assets and LOD variants; instance repeated city meshes; bake lights; preserve deterministic animation states in the renderer. Cap DPR (e.g. at 2), adapt render scale and measure GPU memory/draw calls.
 - Keep 2D fallback but do not promise identical cinematic layers unless created.
 - If game content grows beyond worker upload size, treat Edge asset delivery as separate verified deployment architecture; do not inline multi-megabyte movie in worker without size test.
 
@@ -190,11 +190,11 @@ Implement debug API only with explicit dev/test flag and enforce no import in pr
 
 ## 9. Explicit decisions deferred
 
-- Actual 3D engine / Three.js — no until 2.5D prototype shows an unmet interaction need.
+- Runtime Three.js for the city — selected by ADR-0001, subject to the P0 mobile technical-spike acceptance gate. Do not replace the Classic Phaser entry until the new scene passes.
 - Multiplayer, real-time viewer counts, network APIs, online leaderboard, campaign save/sync, monetization — outside first slice.
 - Official Arvan tokens/fonts/assets — must verify distribution rights; Sorkhab UI guidance is not permission to use logos.
 - Production Arvan Edge bundle layout — must be tested on target account.
 
 ## 10. ADR review trigger
 
-Revisit this architecture only if: a tested playable requirement cannot be satisfied in 2.5D; mobile frame timing fails; deterministic event model becomes inaccurate; or Arvan hosting restrictions demonstrably force another packaging strategy. Record evidence, not aesthetic preference alone.
+Revisit this architecture only if: real-mobile Three.js timing/load budgets fail after optimization; the visual/editor workflow strongly favors PlayCanvas; deterministic event model becomes inaccurate; or Arvan hosting restrictions demonstrably force another packaging strategy. Record evidence, not aesthetic preference alone.

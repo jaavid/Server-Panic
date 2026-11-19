@@ -124,16 +124,16 @@ Service health derives from **the actual simulation**; no fake randomized health
 
 ## 8. Sound & narrative tone
 
-- Sound design: distant city hum, concert ambience, data pulses, drone thrusters, concise incident alerts. Three-dimensional-looking ambience is fine even if renderer is 2.5D.
+- Sound design: distant city hum, concert ambience, data pulses, drone thrusters, concise incident alerts. World-space positional sound should follow 3D zone anchors where helpful.
 - Sound starts after interaction and is muted on request. Don't use copyrighted commercial concert music. Use original or properly licensed loops.
 - Humor is subtle: server facial expression, a drone's apologetic wobble, a delayed stage-screen reaction. Never make citizen distress slapstick.
 
 ## 9. Art pipeline, delivery and performance
 
-- Blender Python produces original stylized 3D modular buildings, server nodes, drone and environment pieces. Render 3/4 orthographic or near-orthographic camera views to transparent WebP/PNG atlases.
-- **PROPOSED v0.2 tech:** Phaser 3 + TS + Vite; 2.5D prerendered spatial layers and interactive hit regions; no full runtime 3D engine in this vertical slice. The supplied opening video is a reference/cinematic asset, not evidence of a current playable 3D city.
+- Blender Python produces original stylized 3D modular buildings, server nodes, drone and environments as optimized GLB/glTF with baked lighting/lightmaps and versioned scene anchors. Render 3/4 transparent WebP/PNG atlases only for classic mode, cutscenes or distant/background layers.
+- **ACCEPTED engine direction (ADR-0001):** Three.js + strict TypeScript + Vite for a real-time 3D city with constrained 3/4 camera and world-space picking. WebGL2 first; opt-in WebGPU only after measurements. Keep the existing Phaser/Canvas2D classic Server Panic as a separate legacy entry. The supplied opening video is a reference/cinematic asset, not evidence of a current playable 3D city. See [ADR-0001](../architecture/ADR_0001_THREEJS_CITY_RENDERER.md).
 - Desktop centered playable viewport; responsive portrait first; optional landscape layout. Target 30 FPS minimum and 45–60 FPS where hardware allows, validated on actual device.
-- Audit bundle/atlas memory; avoid loading unvisited high-detail city layers at boot. Prefer progressive asset streaming from locally served packaged assets and prefetch shortly before camera movement.
+- Audit GLB geometry, draw calls, textures and download sizes; bake lighting, instance repeated buildings and lazy-load high-detail zone assets. Use locally served packaged assets and prefetch shortly before camera movement.
 - Edge deployment: keep local build functional; verify the real competition/Edge route and upload limits. Existing docs describe a bundled worker fallback; new city assets may exceed the old one-file strategy.
 
 ## 10. Future progression (not in first slice)
@@ -148,7 +148,7 @@ Service health derives from **the actual simulation**; no fake randomized health
 |---|---|---|---|
 | OD-01 | OPEN | rights/competition rules for using name «آروان‌شهر» | review trademark and competition terms; no official logo or endorsement until permission |
 | OD-02 | PROPOSED | 420-second default session | 5 external players: boredom/pressure curve, adjust within 5–10 min |
-| OD-03 | PROPOSED | 2.5D pre-rendered instead of runtime 3D | camera range and real-phone FPS/size tests |
+| OD-03 | ACCEPTED (pending performance gate) | Three.js runtime 3D for new city, Phaser for classic | 3D P0 spike: real-phone FPS, bundle size, camera interaction |
 | OD-04 | OPEN | exact drone repair vs cooling targeting model | paper/test with 360px HUD |
 | OD-05 | PROPOSED | three tools + contextual decision cards | tutorial comprehension and mis-tap tests |
 | OD-06 | OPEN | real venue/cultural architecture reference and licensing | art review; avoid identifiable copies |
