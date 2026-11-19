@@ -1,0 +1,14 @@
+{
+  "origin": "original-procedural-2d",
+  "states": [
+    "idle",
+    "processing",
+    "overheating",
+    "critical",
+    "offline",
+    "recovery"
+  ],
+  "racks": 3,
+  "format": "WebP/PNG",
+  "blenderRendered": false
+}

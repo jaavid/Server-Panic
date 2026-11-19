@@ -1,0 +1,36 @@
+{
+  "name": "server-panic",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run",
+    "test:ui": "playwright test",
+    "lint": "eslint .",
+    "format": "prettier --write src tests scripts/*.ts",
+    "assets:2d": "python3 scripts/generate_fallback.py && python3 scripts/build_atlas.py",
+    "assets:blender": "bash scripts/build_blender_assets.sh",
+    "build:offline": "bash scripts/build_offline.sh",
+    "verify:offline": "bash scripts/verify_offline.sh",
+    "test:offline": "bash scripts/verify_offline.sh",
+    "typecheck:core": "tsc -p tsconfig.check.json",
+    "build:edge": "python3 scripts/build_edge_worker.py"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.5.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.0"
+  }
+}

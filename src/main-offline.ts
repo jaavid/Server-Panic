@@ -1,0 +1,10 @@
+import { CanvasRenderer } from './game/renderers/CanvasRenderer.js';
+import { GameController } from './game/ui/GameController.js';
+import { buildShell } from './game/ui/shell.js';
+const root = document.getElementById('app');
+if (!root) throw new Error('No app root');
+buildShell(root);
+const stage = document.getElementById('game-stage');
+if (!stage) throw new Error('No game stage');
+const serverPanic = new GameController(root, new CanvasRenderer(stage));
+void serverPanic;

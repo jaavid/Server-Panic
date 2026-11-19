@@ -1,0 +1,712 @@
+{
+  "frames": {
+    "rack-0-critical": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-0-idle": {
+      "frame": {
+        "x": 240,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-0-offline": {
+      "frame": {
+        "x": 480,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-0-overheating": {
+      "frame": {
+        "x": 720,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-0-processing": {
+      "frame": {
+        "x": 960,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-0-recovery": {
+      "frame": {
+        "x": 0,
+        "y": 320,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-1-critical": {
+      "frame": {
+        "x": 240,
+        "y": 320,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-1-idle": {
+      "frame": {
+        "x": 480,
+        "y": 320,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-1-offline": {
+      "frame": {
+        "x": 720,
+        "y": 320,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-1-overheating": {
+      "frame": {
+        "x": 960,
+        "y": 320,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-1-processing": {
+      "frame": {
+        "x": 0,
+        "y": 640,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-1-recovery": {
+      "frame": {
+        "x": 240,
+        "y": 640,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-2-critical": {
+      "frame": {
+        "x": 480,
+        "y": 640,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-2-idle": {
+      "frame": {
+        "x": 720,
+        "y": 640,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-2-offline": {
+      "frame": {
+        "x": 960,
+        "y": 640,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-2-overheating": {
+      "frame": {
+        "x": 0,
+        "y": 960,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-2-processing": {
+      "frame": {
+        "x": 240,
+        "y": 960,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "rack-2-recovery": {
+      "frame": {
+        "x": 480,
+        "y": 960,
+        "w": 240,
+        "h": 310
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 240,
+        "h": 310
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 310
+      }
+    },
+    "drone-hover-0": {
+      "frame": {
+        "x": 720,
+        "y": 960,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-hover-1": {
+      "frame": {
+        "x": 960,
+        "y": 960,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-hover-2": {
+      "frame": {
+        "x": 0,
+        "y": 1280,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-hover-3": {
+      "frame": {
+        "x": 240,
+        "y": 1280,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-hover-4": {
+      "frame": {
+        "x": 480,
+        "y": 1280,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-hover-5": {
+      "frame": {
+        "x": 720,
+        "y": 1280,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-hover-6": {
+      "frame": {
+        "x": 960,
+        "y": 1280,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-hover-7": {
+      "frame": {
+        "x": 0,
+        "y": 1600,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-repair-0": {
+      "frame": {
+        "x": 240,
+        "y": 1600,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-repair-1": {
+      "frame": {
+        "x": 480,
+        "y": 1600,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-repair-2": {
+      "frame": {
+        "x": 720,
+        "y": 1600,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-repair-3": {
+      "frame": {
+        "x": 960,
+        "y": 1600,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-repair-4": {
+      "frame": {
+        "x": 0,
+        "y": 1920,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-repair-5": {
+      "frame": {
+        "x": 240,
+        "y": 1920,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-repair-6": {
+      "frame": {
+        "x": 480,
+        "y": 1920,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone-repair-7": {
+      "frame": {
+        "x": 720,
+        "y": 1920,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    },
+    "drone": {
+      "frame": {
+        "x": 960,
+        "y": 1920,
+        "w": 200,
+        "h": 190
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 190
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 190
+      }
+    }
+  },
+  "meta": {
+    "image": "characters-atlas.png",
+    "size": {
+      "w": 1200,
+      "h": 2240
+    },
+    "scale": "1"
+  }
+}

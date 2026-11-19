@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-offline/
+playwright-report/
+test-results/
+*.blend1
+.cache/
+.DS_Store

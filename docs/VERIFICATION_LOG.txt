@@ -1,0 +1,104 @@
+Offline playable build at dist-offline/index.html
+Generated play.html 385 KiB assets embedded: 37
+TAP version 13
+# Subtest: FIFO and routing to one rack
+ok 1 - FIFO and routing to one rack
+  ---
+  duration_ms: 2.466585
+  type: 'test'
+  ...
+# Subtest: cannot route to busy/offline/unknown racks
+ok 2 - cannot route to busy/offline/unknown racks
+  ---
+  duration_ms: 0.248377
+  type: 'test'
+  ...
+# Subtest: route and work heat; passive cooling
+ok 3 - route and work heat; passive cooling
+  ---
+  duration_ms: 0.942842
+  type: 'test'
+  ...
+# Subtest: cooling resets temperature and enforces cooldown
+ok 4 - cooling resets temperature and enforces cooldown
+  ---
+  duration_ms: 0.409867
+  type: 'test'
+  ...
+# Subtest: offline cooling and routing rejected
+ok 5 - offline cooling and routing rejected
+  ---
+  duration_ms: 0.371742
+  type: 'test'
+  ...
+# Subtest: critical failure and recovery
+ok 6 - critical failure and recovery
+  ---
+  duration_ms: 1.388765
+  type: 'test'
+  ...
+# Subtest: score, completed packet, combo and expiration
+ok 7 - score, completed packet, combo and expiration
+  ---
+  duration_ms: 1.724681
+  type: 'test'
+  ...
+# Subtest: combo resets on rack burnout
+ok 8 - combo resets on rack burnout
+  ---
+  duration_ms: 0.314707
+  type: 'test'
+  ...
+# Subtest: win at session end
+ok 9 - win at session end
+  ---
+  duration_ms: 0.566556
+  type: 'test'
+  ...
+# Subtest: lose on queue pressure
+ok 10 - lose on queue pressure
+  ---
+  duration_ms: 0.497172
+  type: 'test'
+  ...
+# Subtest: lose if all racks are offline
+ok 11 - lose if all racks are offline
+  ---
+  duration_ms: 1.151168
+  type: 'test'
+  ...
+# Subtest: difficulty advances at fifteen seconds
+ok 12 - difficulty advances at fifteen seconds
+  ---
+  duration_ms: 2.937505
+  type: 'test'
+  ...
+# Subtest: fixed seeds produce identical events and state
+ok 13 - fixed seeds produce identical events and state
+  ---
+  duration_ms: 5.010747
+  type: 'test'
+  ...
+# Subtest: personal best persists through localStorage interface
+ok 14 - personal best persists through localStorage interface
+  ---
+  duration_ms: 14.376525
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 123.716816
+Edge script: 398,698 bytes. Edge bundle limits must be verified in the active Arvan plan.
+PASS: Edge Worker returns executable bundled HTML, SPA fallback, healthz, 204 favicon, 405 methods and HEAD.
+PASS 360x800 menu/route/score/cool/cooldown/overflow/no-errors
+PASS 390x844 menu/route/score/cool/cooldown/overflow/no-errors
+PASS 768x1024 menu/route/score/cool/cooldown/overflow/no-errors
+PASS 1440x900 menu/route/score/cool/cooldown/overflow/no-errors
+PASS critical failure/results/replay flow
+Browser smoke passed: 4 viewports plus critical/results/replay.
