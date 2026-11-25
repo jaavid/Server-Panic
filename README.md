@@ -2,6 +2,20 @@
 
 **A complete playable 90-second mobile-first data-center arcade MVP.** Original game logic and characters. No accounts, telemetry, API calls, or backend.
 
+## آروان‌شهر: شب کنسرت (Three.js preview)
+
+A separate seven-minute browser mission with three interactive districts, drone
+repair and a live-broadcast failure/recovery loop. Start locally with no npm install:
+
+```sh
+python3 -m http.server 8765 --bind 127.0.0.1
+# Open http://localhost:8765/concert/
+```
+
+See [Concert Night build and test commands](concert/README.md) and the
+[Blender art handoff](docs/production/CONCERT_ART_HANDOFF.md). This preview is not
+deployed, and it does not replace the Classic entry described below.
+
 ## Play immediately (offline, no dependencies)
 
 Open **`play.html`** from the repository root in a browser (committed playable Canvas2D build). Running `npm run build:offline` regenerates it at **`dist-offline/play.html`**. It is one self-contained HTML file (~385 KiB) with JavaScript, CSS, and illustrated WebP art embedded. No local HTTP server or npm is required. This is the **Canvas2D fallback build**, not the Phaser build.
