@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1424"><title>آروان‌شهر: شب کنسرت</title><link rel="stylesheet" href="./concert.css">
+</head>
+<body>
+<main class="shell">
+<header class="top">
+ <div><div class="eyebrow">ایستگاه فرماندهی · مأموریت ۰۱</div><h1>آروان‌شهر <span>شب کنسرت</span></h1></div>
+ <div class="timer"><small>زمان باقی‌مانده</small><strong id="clock" dir="ltr">۰۷:۰۰</strong></div>
+</header>
+<section class="status" aria-label="وضعیت شهر">
+ <div><small>پخش زنده</small><strong id="stream">آماده</strong></div><div><small>اعتماد تماشاگران</small><strong id="trust">۱۰۰٪</strong></div><div><small>صف / امتیاز</small><strong id="scores">۰ / ۰</strong></div>
+</section>
+<div class="stage" id="stage">
+ <canvas id="world" aria-label="نمای سه‌بعدی شهر، برای انتخاب بدون اشاره‌گر از دکمه‌های پایین استفاده کنید"></canvas>
+ <div class="tag tag-venue">۰۱ · محوطهٔ کنسرت</div><div class="tag tag-data">۰۲ · دیتاسنتر</div><div class="tag tag-control">۰۳ · مرکز کنترل</div>
+ <div class="actions-top"><button id="mute" aria-pressed="true">صدا: قطع</button><button id="pause" disabled>مکث</button><button id="zoom" aria-pressed="false">زوم +</button></div>
+ <section class="overlay" id="overlay" aria-labelledby="overlay-title"><div class="intro">
+ <p class="eyebrow" id="overlay-kicker">زنده از آروان‌شهر</p><h2 id="overlay-title">کنسرت نباید قطع شود.</h2>
+ <p id="overlay-copy">هفت دقیقه وقت داری. صف را بین رک‌ها تقسیم کن، با پهپاد رک‌ها را نجات بده و اگر پخش قطع شد، مسیر پشتیبان را روشن کن.</p>
+ <button class="primary" id="start">شروع مأموریت</button>
+ </div></section>
+</div>
+<p class="alert" id="alert" role="status">آمادهٔ شروع مأموریت</p>
+<nav class="districts" aria-label="مناطق شهر">
+ <button data-zone="venue" aria-pressed="false">کنسرت</button><button data-zone="data" aria-pressed="true">دیتاسنتر</button><button data-zone="control" aria-pressed="false">مرکز کنترل</button>
+</nav>
+<section class="console" aria-label="کنترل مأموریت">
+ <div class="console-top"><strong id="selection">رک سپهر</strong><small id="detail">پهپاد آماده</small></div>
+ <div class="node-picks" id="node-picks"><button data-node="0" aria-pressed="true">سپهر</button><button data-node="1" aria-pressed="false">باران</button><button data-node="2" aria-pressed="false">تابان</button></div>
+ <div class="commands"><button id="route">ارسال بسته</button><button id="drone">اعزام پهپاد</button><button id="backup">پخش پشتیبان</button></div>
+ <div class="decision" id="decision" hidden><span>اولویت موقت:</span><button id="policy-stream">حفظ پخش</button><button id="policy-entry">تسریع ورود</button></div>
+</section>
+</main><script type="module" src="./main.mjs"></script>
+</body></html>

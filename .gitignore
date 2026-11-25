@@ -8,3 +8,6 @@ test-results/
 .DS_Store
 
 /.studio-private/
+
+# Generated Edge workers
+dist-edge/
