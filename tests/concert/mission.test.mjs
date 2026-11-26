@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  availableRack, canDrone, canNotify, createMission, command, DURATION, EVENTS, tick,
+  availableRack, canDrone, canNotify, canRoute, createMission, command, DURATION, EVENTS, tick,
 } from '../../concert/mission.mjs';
 
 function operate(s, {backup = true, audience = true, drone = true} = {}) {
@@ -156,4 +156,63 @@ test('seven-minute wins are repeatable across seeds and account for every packet
   }
   assert.deepEqual(run(7), run(7));
   assert.equal(createMission().time, 0);
+});
+
+
+test('the first live deadline rewards express routing and slower routing produces less heat', () => {
+  const standard = advance(createMission(), 6);
+  const urgent = standard.queue.find(packet => packet.due != null);
+  assert.ok(urgent);
+  standard.queue = [urgent];
+  const express = structuredClone(standard), cool = structuredClone(standard);
+  assert.equal(express.queue[0].due, 9);
+  const startingFast = express.nodes[0].heat, startingCool = cool.nodes[2].heat;
+  assert.ok(command(express, 'route', 0));
+  assert.ok(command(cool, 'route', 2));
+  advance(express, 8);
+  assert.equal(express.priorityServed, 1);
+  assert.equal(express.nodes[0].heat - startingFast, 18);
+  advance(cool, 10);
+  assert.equal(cool.priorityServed, 0);
+  assert.equal(cool.nodes[2].heat - startingCool, 8);
+  assert.equal(cool.nodes[2].lastDelivery.timely, false);
+});
+
+test('both express-heavy thermal rotation and cooling-heavy play win with different route mixes', () => {
+  function run(seed, coolFirst) {
+    const state = createMission(seed), use = [0, 0, 0];
+    while (!state.result) {
+      command(state, 'backup');
+      const repair = state.nodes.findIndex((_, id) => canDrone(state, id));
+      if (repair >= 0) command(state, 'drone', repair);
+      if (state.decision) command(state, 'policy', state.time < 200 ? 'entry' : 'stream');
+      command(state, 'audience');
+      const urgent = state.queue[0]?.due != null;
+      if (state.time % 6 === 0 || state.queue.length > 2 || urgent) {
+        const preference = urgent || !coolFirst ? [0, 1, 2] : [2, 1, 0];
+        const target = preference.find(id => canRoute(state, id) && state.nodes[id].heat <= (coolFirst ? 74 : 58));
+        if (target !== undefined && command(state, 'route', target)) use[target]++;
+      }
+      tick(state);
+    }
+    return {state, use};
+  }
+  for (let seed = 0; seed < 16; seed++) {
+    const express = run(seed, false), cool = run(seed, true);
+    assert.equal(express.state.result, 'win');
+    assert.equal(cool.state.result, 'win');
+    assert.ok(express.use[0] > express.use[2] && cool.use[2] > cool.use[0]);
+  }
+});
+
+
+test('simultaneous manual arrivals retain separate outcomes on their map targets', () => {
+  const s = createMission();
+  s.queue = [{id: 1, since: 0, due: 3}, {id: 2, since: 0}];
+  assert.ok(command(s, 'route', 2));
+  advance(s, 2);
+  assert.ok(command(s, 'route', 0));
+  advance(s, 4);
+  assert.deepEqual(s.nodes[0].lastDelivery, {id: 2, timely: true});
+  assert.deepEqual(s.nodes[2].lastDelivery, {id: 1, timely: false});
 });

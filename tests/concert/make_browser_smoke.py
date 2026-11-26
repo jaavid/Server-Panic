@@ -1,4 +1,4 @@
-"""Create a self-contained, accelerated offline browser QA page."""
+"""Create an accelerated QA page from the self-contained offline game."""
 from pathlib import Path
 
 source = Path('dist-offline/arvan-shahr-concert.html')
@@ -8,52 +8,48 @@ window.requestAnimationFrame=callback=>{pending=callback;return 1;};
 const errors=[];
 window.addEventListener('error',event=>errors.push(event.message));
 setTimeout(()=>{
- const read=id=>document.getElementById(id);
- const stage=read('stage');
- const press=id=>{
-   const button=read(id);
-   if(button.hidden||button.disabled)return false;
-   button.click();
-   return true;
- };
- const rack=index=>document.querySelector('[data-node="'+index+'"]').click();
- const focus=zone=>document.querySelector('[data-zone="'+zone+'"]').click();
+ const get=id=>document.getElementById(id);
+ const stage=get('stage');
+ const press=id=>get(id).click();
+ const rack=id=>document.querySelector('[data-node="'+id+'"]');
  const frame=ms=>{const callback=pending;pending=null;callback(now+=ms);};
  const check=(value,label)=>{if(!value)throw Error(label);};
  try {
   frame(1);
   check(document.documentElement.scrollWidth<=innerWidth,'horizontal overflow');
-  check(stage.dataset.phase==='intro'&&!read('opening-continue').hidden,'story fallback');
+  check(stage.dataset.phase==='intro'&&!get('opening-continue').hidden,'story fallback');
   press('opening-continue');
-  check(stage.dataset.phase==='training'&&press('first-signal'),'start with a real signal');
-  let sent=false, backed=false;
+  press('venue');
+  check(get('clock').textContent==='۰۷:۰۰','unarmed clock');
+  rack(2).click();
   for(let time=1;time<=420;time++) {
    frame(1000);
    if(stage.dataset.phase==='result')break;
    if(time===10){
     press('pause');frame(1000);
-    check(read('clock').textContent==='۰۶:۵۰','pause');
+    check(get('clock').textContent==='۰۶:۵۰','pause');
     press('start');
    }
-   if(time===96){focus('data');rack(1);sent=press('drone');}
-   if(time===231){focus('data');rack(2);press('drone');}
-   if(!read('decision').hidden)press(time<200?'policy-entry':'policy-stream');
+   if(time===96){press('drone');rack(1).click();}
+   if(time===101)check(get('guide').textContent.includes('پهپاد برگشت'),'repair');
+   if(time===231&&!get('drone').hidden){press('drone');rack(2).click();}
+   if(!get('decision').hidden)press(time<200?'policy-entry':'policy-stream');
    if(time===302){
     check(stage.dataset.broadcast==='outage','outage');
-    focus('control');backed=press('backup');
+    press('control');
    }
    if(time===307)check(stage.dataset.broadcast==='backup','backup');
-   if(time===31||time===305){focus('venue');press('audience');}
-   if(time%6===0||time%3===0&&time>=374&&time<402){
-    focus('data');
-    const available=document.querySelector('[data-node][data-status=free]');
-    if(available){available.click();press('route');}
+   if(time===31||time===305)press('venue');
+   const urgent=get('queue').textContent.includes('فوری');
+   if(time%6===0||urgent||time>=374&&time<402&&time%3===0){
+    const target=(urgent?[0,1,2]:[2,1,0]).map(rack)
+      .find(el=>el.getAttribute('aria-disabled')==='false'&&el.dataset.status!=='hot');
+    if(target)target.click();
    }
   }
-  check(sent&&backed,'drone and backup');
-  check(stage.dataset.result==='win'&&!read('summary').hidden,'victory and summary');
+  check(stage.dataset.result==='win'&&!get('summary').hidden,'victory and summary');
   press('start');
-  check(stage.dataset.phase==='training'&&read('clock').textContent==='۰۷:۰۰','replay');
+  check(stage.dataset.phase==='training'&&!get('venue').hidden&&get('clock').textContent==='۰۷:۰۰','replay');
   check(errors.length===0,'page errors: '+errors.join(', '));
   document.body.dataset.qa='pass';
  } catch (error) { document.body.dataset.qa='fail: '+error.message; }

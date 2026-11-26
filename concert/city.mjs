@@ -2,16 +2,25 @@ import * as T from './vendor/three.module.min.js';
 const POS = [[-4.7,0,-2.8],[-1.8,0,-3.2],[1.1,0,-3.6]];
 const targets = { venue:[1,0,3.2], data:[-2,0,-2.6], control:[5.7,0,-2.2] };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-export function city(canvas, select) {
+export function city(canvas, markers, select) {
   let renderer;
+  const stage = canvas.parentElement;
+  function flatMap() {
+    stage.dataset.flat = '';
+    for (const marker of markers) {
+      marker.style.removeProperty('--x');
+      marker.style.removeProperty('--y');
+    }
+  }
   try {
     renderer = new T.WebGLRenderer({ canvas, antialias:true, powerPreference:'low-power' });
   } catch {
     const note = document.createElement('p');
     note.className = 'fallback';
-    note.textContent = 'نمای سه‌بعدی در این مرورگر در دسترس نیست. مأموریت از دکمه‌های پایین قابل بازی است.';
+    note.textContent = 'نقشهٔ ساده فعال است. مقصد را روی دکمه‌های نقشه انتخاب کن.';
     canvas.after(note);
-    return { focus() {}, zoom() {}, render() {} };
+    flatMap();
+    return { render() {} };
   }
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   renderer.outputColorSpace = T.SRGBColorSpace;
@@ -22,9 +31,16 @@ export function city(canvas, select) {
   const sun = new T.DirectionalLight(0xffd9aa,2.1);
   sun.position.set(4,10,8); scene.add(sun);
   const ortho = new T.OrthographicCamera();
-  const home = new T.Vector3(0,0,0.1), anchor = home.clone(), look = home.clone();
-  const offset = new T.Vector3(12,16,21);
-  let zoom = false, currentZoom = 1, lastW = 0, lastH = 0;
+  const look = new T.Vector3(), offset = new T.Vector3();
+  let lastW = 0, lastH = 0;
+  const markerPositions = {
+    venue: [1, .52, 4.95],
+    control: [5.7, 2.85, -2.2],
+    rack0: [-4.7, 3.03, -2.8],
+    rack1: [-1.8, 3.33, -3.2],
+    rack2: [1.1, 3.03, -3.6],
+  };
+  const screenPoint = new T.Vector3();
   const block = new T.BoxGeometry(1,1,1), ball = new T.SphereGeometry(.5,9,7);
   const materials = new Map();
   const pickable = [];
@@ -95,20 +111,22 @@ export function city(canvas, select) {
   box(drone,0,0,0,.55,.21,.39,0xd3dcfa);
   for(const x of [-.42,.42]) for(const z of [-.30,.30]) {box(drone,x*.6,0,z*.6,.55,.07,.07,0x587489);beacon(drone,x,0,z,.28,0xf5bb67);}
   const shadow=new T.Mesh(new T.CircleGeometry(.45,12),new T.MeshBasicMaterial({color:0x111d31,transparent:true,opacity:.4}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.25;scene.add(shadow);
-  // The opening links the concert screen to the first playable rack.
-  const path = new T.CatmullRomCurve3([
-    [-.87, 1.46, 1.47], [-1.63, 1.02, 1.62], [-2.44, .65, 1.58],
-    [-3.72, .43, 1.12], [-4.65, .49, .28], [-4.7, 1.05, -2.02],
-  ].map(point => new T.Vector3(...point)));
-  const openingRoute = new T.Mesh(new T.TubeGeometry(path, 36, .092, 6, false),
-    new T.MeshBasicMaterial({color: 0x68f5d4}));
-  const firstPulse = new T.Mesh(ball, new T.MeshBasicMaterial({color: 0xffe0a3}));
-  const signalSource = new T.Mesh(ball, new T.MeshBasicMaterial({color: 0xa7fff1}));
-  signalSource.scale.setScalar(.44);
-  signalSource.position.copy(path.getPointAt(0));
-  firstPulse.scale.setScalar(.52);
-  openingRoute.visible = firstPulse.visible = signalSource.visible = false;
-  scene.add(openingRoute, signalSource, firstPulse);
+  // Project lightweight map controls over the same geometry used for ray picking.
+  const paths = POS.map(([x, , z]) => new T.CatmullRomCurve3([
+    [-.87, 1.46, 1.47], [-1.63, 1.02, 1.62],
+    [x * .67 - .25, .43, .85], [x, .46, .22], [x, 1.05, z + .78],
+  ].map(point => new T.Vector3(...point))));
+  const wires = paths.map(path => {
+    const wire = new T.Mesh(new T.TubeGeometry(path, 36, .075, 6, false),
+      new T.MeshBasicMaterial({color: 0x89ffd8, transparent: true}));
+    wire.visible = false;
+    scene.add(wire);
+    return wire;
+  });
+  const pulse = new T.Mesh(ball, new T.MeshBasicMaterial({color: 0xffe4a9}));
+  pulse.scale.setScalar(.51);
+  pulse.visible = false;
+  scene.add(pulse);
   // Batch immovable boxes by material; leave raycast proxy geometry in place.
   const animated = new Set([screen,ctrlLight,...bars,...strip,...racks.flatMap(r=>r.panels)]);
   scene.updateMatrixWorld(true);
@@ -132,20 +150,36 @@ export function city(canvas, select) {
     const hit=ray.intersectObjects(pickable,false)[0]; if(hit) select(hit.object.userData.zone,hit.object.userData.node);
   });
   let lost = false;
-  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;});
-  canvas.addEventListener('webglcontextrestored',()=>{lost=false;lastW=0;});
+  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;flatMap();});
+  canvas.addEventListener('webglcontextrestored',()=>{lost=false;lastW=0;delete stage.dataset.flat;});
   return {
-    focus(zone) { const p=targets[zone]; if(p) anchor.set(p[0]*.38,0,p[2]*.34); else anchor.copy(home); },
-    zoom(value) { zoom=value; },
-    render(s,selected,zone,seconds,anim,opening) {
-      if(lost) return;
-      const w=canvas.clientWidth,h=canvas.clientHeight;
-      if(!w||!h)return;
-      if(w!==lastW||h!==lastH){renderer.setSize(w,h,false);lastW=w;lastH=h;}
-      look.lerp(anchor,reduced?1:.10);currentZoom+=(Number(zoom)*.24+1-currentZoom)*(reduced?1:.10);
-      const a=w/h; const size=Math.max(7.7,9.2/a)/currentZoom;
-      Object.assign(ortho,{left:-size*a,right:size*a,top:size,bottom:-size,near:.1,far:100});
-      ortho.updateProjectionMatrix();ortho.position.copy(look).add(offset);ortho.lookAt(look);
+    render(s, selected, seconds, anim, route, practice) {
+      if (lost) return;
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;
+      if (w !== lastW || h !== lastH) {
+        renderer.setSize(w, h, false);
+        lastW = w;
+        lastH = h;
+        const aspect = w / h, portrait = aspect < 1;
+        look.set(portrait ? .35 : 0, 0, portrait ? -.65 : -.80);
+        offset.set(portrait ? 6 : 12, portrait ? 27 : 16, portrait ? 22 : 21);
+        const size = Math.max(portrait ? 8.4 : 7.55, (portrait ? 7.2 : 9.2) / aspect);
+        Object.assign(ortho, {left: -size * aspect, right: size * aspect, top: size, bottom: -size, near: .1, far: 100});
+        ortho.updateProjectionMatrix();
+        ortho.position.copy(look).add(offset);
+        ortho.lookAt(look);
+        ortho.updateMatrixWorld(true);
+        for (const marker of markers) {
+          screenPoint.set(...markerPositions[marker.dataset.mark]).project(ortho);
+          const x = Math.max(50, Math.min(w - 50, (screenPoint.x + 1) * w / 2));
+          let y = (1 - screenPoint.y) * h / 2;
+          if (portrait && marker.dataset.mark === 'rack1') y -= 31;
+          marker.style.setProperty('--x', x.toFixed(1) + 'px');
+          marker.style.setProperty('--y', Math.max(100, Math.min(h - 145, y)).toFixed(1) + 'px');
+        }
+      }
+      if (reduced) anim = 0;
       const running=s.quality!==0, backup=s.backup.active;
       screen.material=mat(!running?0x22213e:backup?0xffb970:s.quality<70?0xf6989c:0x59e8d4,.55);
       ctrlLight.material=mat(s.backup.arrive&&!backup?0xffc482:backup?0x68f5d4:0x72a5dd,.53);
@@ -153,7 +187,7 @@ export function city(canvas, select) {
       strip.forEach((b,i)=>b.material=mat(!running?0x6e5162:((Math.floor(anim*9)+i)%5===0?0xa0fff2:0x3b9caa),.35));
       racks.forEach((r,i)=>{
         const n=s.nodes[i], c=n.offline?0xcc7285:n.heat>=72?0xffb66d:n.work?0x82aafa:0x5de9d0;
-        r.panels.forEach(p=>p.material=mat(c,.4));r.signal.material=mat(c,.65);r.ring.visible=zone==='data'&&i===selected;
+        r.panels.forEach(p=>p.material=mat(c,.4));r.signal.material=mat(c,.65);r.ring.visible=i===selected;
       });
       for(let i=0;i<people.length;i++){
         const [x,z,phase]=people[i]; dummy.position.set(x,.36+(running?Math.max(0,Math.sin(anim*3+phase))*.12:0),z);
@@ -164,13 +198,19 @@ export function city(canvas, select) {
       if(target>=0){
         const portion=Math.max(0,Math.min(1,(seconds-(s.drone.arrive-5))/5));
         const [x,,z]=POS[target], t=portion*portion*(3-2*portion);
-        drone.position.set(5.7+(x-5.7)*t,2+Math.sin(t*Math.PI)*2.45,-2.2+(z+2.2)*t);
+        const flight = reduced ? .50 : t;
+        drone.position.set(5.7+(x-5.7)*flight,2+Math.sin(flight*Math.PI)*2.45,-2.2+(z+2.2)*flight);
         drone.rotation.y=-t;
       } else {drone.position.set(6.4,2.23,-.9);drone.rotation.y=0;}
       shadow.position.x=drone.position.x;shadow.position.z=drone.position.z;
-      openingRoute.visible = signalSource.visible = Boolean(opening);
-      firstPulse.visible = Boolean(opening && s.nodes[0].packet && seconds <= 3);
-      if (firstPulse.visible) path.getPointAt(reduced ? .55 : Math.min(1, seconds / 3), firstPulse.position);
+      const inTransit = route && seconds - route.start < route.duration + 1;
+      for (const [id, wire] of wires.entries()) {
+        wire.visible = (practice && id !== 1) || Boolean(inTransit && id === route.id);
+        wire.material.opacity = practice ? .55 : .95;
+      }
+      pulse.visible = Boolean(inTransit && seconds - route.start < route.duration);
+      if (pulse.visible) paths[route.id].getPointAt(reduced ? .62 :
+        Math.min(1, Math.max(0, (seconds - route.start) / route.duration)), pulse.position);
       renderer.render(scene,ortho);
     }
   };

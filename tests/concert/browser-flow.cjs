@@ -4,279 +4,233 @@ const {resolve} = require('node:path');
 const {pathToFileURL} = require('node:url');
 const {runInNewContext} = require('node:vm');
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-
-const address = process.env.CONCERT_URL || 'http://127.0.0.1:8770/concert/';
-const real = process.argv.includes('--real');
+const address = process.env.CONCERT_URL || 'http://127.0.0.1:8771/concert/';
 const fa = '۰۱۲۳۴۵۶۷۸۹';
-const digit = c => String(fa.indexOf(c));
-const start = '#start';
-
-function clockToSeconds(text) {
-  const [minutes, seconds] = text.replace(/[۰-۹]/g, digit).split(':').map(Number);
-  return minutes * 60 + seconds;
-}
+const rack = id => '[data-node="' + id + '"]';
 
 async function visit(context, options = {}) {
   const page = await context.newPage();
-  if (options.touch) await page.emulateMedia({reducedMotion: 'reduce'});
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  if (!real) {
-    await page.addInitScript(() => {
-      let pending;
-      let now = 0;
-      window.requestAnimationFrame = callback => { pending = callback; return 1; };
-      window.missionFrames = (count, milliseconds) => {
-        for (let i = 0; i < count; i++) {
-          const next = pending;
-          pending = null;
-          now += milliseconds;
-          next(now);
-        }
-      };
-    });
-  }
-  if (options.noWebGL) await page.addInitScript(() => {
-    const getContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function(type, ...args) {
-      if (type.startsWith('webgl')) return null;
-      return getContext.call(this, type, ...args);
+  await page.addInitScript(flat => {
+    let callback, now = 0;
+    window.requestAnimationFrame = next => { callback = next; return 1; };
+    window.missionFrames = (count, ms) => {
+      for (let i = 0; i < count; i++) {
+        const pending = callback;
+        callback = null;
+        pending(now += ms);
+      }
     };
-  });
+    if (!flat) return;
+    const get = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (kind, ...args) {
+      return kind.startsWith('webgl') ? null : get.call(this, kind, ...args);
+    };
+  }, Boolean(options.flat));
   await page.goto(options.url || address);
-  await page.locator('#stage:is([data-phase=intro],[data-phase=menu])').waitFor({state:'attached'});
-  const frame = (count = 1, milliseconds = 1000) =>
-    page.evaluate(([count, milliseconds]) => window.missionFrames(count, milliseconds), [count, milliseconds]);
-  const click = selector => page.locator(selector).click({timeout: 2500});
+  await page.locator('#stage:is([data-phase=intro],[data-phase=menu])').waitFor({state: 'attached'});
   const phase = () => page.locator('#stage').getAttribute('data-phase');
-  const elapsed = async () => 420 - clockToSeconds(await page.locator('#clock').textContent());
-  const open = selector => click('[data-zone="' + selector + '"]');
-  if (!real) await frame(1, 1);
-  return {page, errors, frame, click, phase, elapsed, open};
+  const step = (count = 1, ms = 1000) => page.evaluate(([count, ms]) => window.missionFrames(count, ms), [count, ms]);
+  const click = selector => options.touch ? page.locator(selector).tap({timeout: 3000}) :
+    page.locator(selector).click({timeout: 3000});
+  const ready = async selector => await page.locator(selector).getAttribute('aria-disabled') === 'false';
+  const elapsed = async () => {
+    const [minutes, seconds] = (await page.locator('#clock').textContent()).replace(/[۰-۹]/g, c => fa.indexOf(c)).split(':').map(Number);
+    return 420 - minutes * 60 - seconds;
+  };
+  await step(1, 1);
+  if (await phase() === 'intro') {
+    if (options.noMedia) {
+      assert.ok(await page.locator('#opening-continue').isVisible());
+      assert.equal(await page.locator('#opening-video').getAttribute('src'), null);
+    }
+    await click('#opening-skip');
+  } else await click('#start');
+  await step(1, 16);
+  return {page, errors, phase, step, click, ready, elapsed};
 }
 
-async function play({page, errors, frame, click, phase, elapsed, open}, kind = 'win') {
-  if (await phase() === 'intro') await click('#opening-skip');
-  else await click(start);
+async function start(run, id) {
+  const {page, phase, step, click, elapsed} = run;
   assert.equal(await phase(), 'training');
+  assert.equal(await page.locator('#map-controls button:visible').count(), 1);
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'venue');
+  assert.match(await page.locator('#goal').textContent(), /۷ دقیقه/);
+  await step(8);
   assert.equal(await elapsed(), 0);
-  assert.ok(await page.locator('#first-signal').isEnabled());
-  assert.equal(await page.locator('#route').isVisible(), false);
-  if (!real) {
-    await frame(10);
-    assert.equal(await elapsed(), 0);
-  }
-  await click('#first-signal');
+  await click('#venue');
+  assert.equal(await page.locator('#map-controls button:visible').count(), 2);
+  assert.match(await page.locator(rack(0)).textContent(), /۲ث.*داغ‌تر/);
+  assert.match(await page.locator(rack(2)).textContent(), /۴ث.*خنک‌تر/);
+  await step(8);
+  assert.equal(await elapsed(), 0);
+  await click(rack(id));
   assert.equal(await phase(), 'playing');
-  const started = Date.now();
-  let didPause = false, sent = false, cooled = false, restored = false, briefed = false, protectedEntry = false;
-  let last = -1;
-  for (let iteration = 0; iteration < 1100 && await phase() === 'playing'; iteration++) {
-    if (real) await page.waitForTimeout(500);
-    else await frame();
-    const time = await elapsed();
-    if (await phase() !== 'playing') break;
-    if (real && time !== last && time % 60 === 0) console.log('Normal-speed checkpoint', time);
-    if (time === last) continue;
-    last = time;
+  assert.match(await page.locator('#guide').textContent(), /در راه/);
+}
+
+async function play(run, kind = 'win', first = 2) {
+  const {page, errors, phase, step, click, ready, elapsed} = run;
+  await start(run, first);
+  let repaired = false, backup = false, informed = false;
+  for (let i = 1; i <= 420; i++) {
+    await step();
+    if (await phase() === 'result') break;
     if (kind === 'idle') continue;
-    if (!didPause && time >= 10) {
-      didPause = true;
+    const time = await elapsed();
+    if (time === 10) {
       await click('#pause');
       const frozen = await elapsed();
-      if (real) await page.waitForTimeout(2200);
-      else await frame(8);
+      await step(8);
       assert.equal(await elapsed(), frozen);
-      await click(start);
-      assert.equal(await phase(), 'playing');
+      await click('#start');
     }
-    if (time >= 95 && time <= 107 && !sent) {
-      if (await page.locator('#jump').isVisible()) await click('#jump');
-      else {
-        await open('data');
-        await click('[data-node="1"]');
-      }
-      if (await page.locator('#drone').isEnabled()) {
-        await click('#drone');
-        sent = true;
-        continue;
-      }
+    if (time === 96 && await page.locator('#drone').isVisible()) {
+      await click('#drone');
+      await click(rack(1));
+      assert.match(await page.locator('#guide').textContent(), /پهپاد در راه.*باران/);
+      repaired = true;
     }
-    if (time >= 231 && time <= 237 && !cooled) {
-      await open('data');
-      await click('[data-node="2"]');
-      if (await page.locator('#drone').isEnabled()) {
-        await click('#drone');
-        cooled = true;
-      }
+    if (time === 101 && repaired) assert.match(await page.locator('#guide').textContent(), /پهپاد برگشت/);
+    if (time === 231 && await page.locator('#drone').isVisible()) {
+      await click('#drone');
+      if (await ready(rack(2))) await click(rack(2));
+      else await click('#drone');
     }
-    if (await page.locator('#decision').isVisible()) {
-      await click(time < 200 ? '#policy-entry' : '#policy-stream');
-      protectedEntry = true;
-    }
-    if (time >= 302 && !restored && kind !== 'blackout') {
-      if (await page.locator('#jump').isVisible()) await click('#jump');
-      else await open('control');
-      if (await page.locator('#backup').isEnabled()) {
-        restored = true;
-        await click('#backup');
-        assert.equal(await page.locator('#stage').getAttribute('data-broadcast'), 'outage');
+    if (await page.locator('#decision').isVisible()) await click(time < 200 ? '#policy-entry' : '#policy-stream');
+    if (time === 302) {
+      assert.equal(await page.locator('#stage').getAttribute('data-broadcast'), 'outage');
+      if (kind !== 'blackout') {
+        assert.ok(await ready('#control'));
+        await click('#control');
+        backup = true;
       }
     }
-    if ((time === 31 || time === 305) && !briefed) {
-      await open('venue');
-      if (await page.locator('#audience').isEnabled()) {
-        await click('#audience');
-        assert.match(await page.locator('#alert').textContent(), /تماشاگران/);
-        briefed = true;
-      }
+    if (time === 307 && backup) assert.equal(await page.locator('#stage').getAttribute('data-broadcast'), 'backup');
+    if (!informed && (time === 31 || time === 305) && await ready('#venue')) {
+      await click('#venue');
+      informed = true;
     }
-    if (time % 6 === 0 || time % 3 === 0 && time >= 374 && time < 402) {
-      await open('data');
-      const free = page.locator('[data-node][data-status=free]').first();
-      if (await free.count()) {
-        await free.click();
-        if (await page.locator('#route').isEnabled()) await click('#route');
+    const urgent = (await page.locator('#queue').textContent()).includes('فوری');
+    if (time % 6 === 0 || urgent || time >= 374 && time < 402 && time % 3 === 0) {
+      for (const target of urgent ? [0, 1, 2] : [2, 1, 0]) {
+        const marker = page.locator(rack(target));
+        if (await ready(rack(target)) && await marker.getAttribute('data-status') !== 'hot') {
+          await click(rack(target));
+          break;
+        }
       }
     }
   }
   assert.equal(await phase(), 'result');
-  const elapsedTime = await elapsed();
-  const result = await page.locator('#stage').getAttribute('data-result');
-  assert.equal(result, kind === 'win' ? 'win' : 'loss');
+  assert.equal(await page.locator('#stage').getAttribute('data-result'), kind === 'win' ? 'win' : 'loss');
   assert.ok(await page.locator('#summary').isVisible());
-  assert.equal(await page.locator('#summary dd').count(), 4);
   assert.deepEqual(errors, []);
   if (kind === 'win') {
-    assert.equal(elapsedTime, 420);
-    assert.ok(sent && cooled && restored && briefed && protectedEntry);
+    assert.equal(await elapsed(), 420);
+    assert.ok(repaired && backup && informed);
   } else if (kind === 'blackout') {
-    assert.equal(elapsedTime, 328);
+    assert.equal(await elapsed(), 328);
     assert.match(await page.locator('#overlay-copy').textContent(), /مهلت قطع پخش/);
-  } else {
-    assert.ok(elapsedTime < 302);
-    assert.match(await page.locator('#overlay-copy').textContent(), /اعتماد/);
-  }
-  console.log(kind, elapsedTime, 'mission seconds;', Math.round((Date.now() - started) / 1000),
-    'wall seconds;', (await page.locator('#summary dd').allTextContents()).join(' | '));
-  await click(start);
+  } else assert.match(await page.locator('#overlay-copy').textContent(), /اعتماد/);
+  console.log(kind, await elapsed(), 'mission seconds');
+  await click('#start');
   assert.equal(await phase(), 'training');
   assert.equal(await elapsed(), 0);
-  assert.ok(await page.locator('#first-signal').isEnabled());
   assert.equal(await page.locator('#opening').isVisible(), false);
-  assert.equal(await page.locator('#summary').isVisible(), false);
+  assert.ok(await page.locator('#venue').isVisible());
 }
 
-async function fits(page, selectors) {
-  return page.evaluate(ids => {
-    if (document.documentElement.scrollWidth > innerWidth) return false;
-    return ids.every(id => {
-      const box = document.querySelector(id).getBoundingClientRect();
-      return box.width > 0 && box.top >= 0 && box.bottom <= innerHeight;
-    });
-  }, selectors);
-}
-
-async function mobileChecks(browser) {
-  for (const [width, height] of [[360, 800], [390, 844], [768, 1024], [1440, 900]]) {
+async function layouts(browser) {
+  for (const [width, height] of [[360, 800], [1440, 900]]) {
     const context = await browser.newContext({
-      viewport: {width, height}, hasTouch: width < 1000, isMobile: width < 1000, deviceScaleFactor: 1,
+      viewport: {width, height}, hasTouch: width < 500, isMobile: width < 500, deviceScaleFactor: 1,
+      reducedMotion: 'reduce',
     });
-    const {page, frame, click, open} = await visit(context, {touch: true});
-    await click('#opening-skip');
-    assert.ok(await fits(page, ['#clock', '#first-title', '#first-signal']), width + ' first action layout');
-    if (width < 1000) await page.locator('#first-signal').tap();
-    else await click('#first-signal');
-    if (width === 360) {
-      assert.equal(await page.locator('.fallback').count(), 0, 'touch test requires WebGL');
-      const targets = {
-        venue: [1, .13, 4.2], control: [5.7, 1.1, -2.0], data: [1.1, 1.1, -3.55],
-      };
-      const focus = {
-        data: [-.76, 0, -.884], venue: [.38, 0, 1.088], control: [2.166, 0, -.748],
-      };
-      let previous = 'data';
-      for (const [zone, point] of Object.entries(targets)) {
-        await frame(1, 16);
-        const coord = await page.evaluate(async ({pose, point}) => {
-          const T = await import(new URL('vendor/three.module.min.js', location.href).href);
-          const box = document.querySelector('#world').getBoundingClientRect();
-          const ratio = box.width / box.height;
-          const size = Math.max(7.7, 9.2 / ratio);
-          const camera = new T.OrthographicCamera(-size * ratio, size * ratio, size, -size, .1, 100);
-          const look = new T.Vector3(...pose);
-          camera.position.copy(look).add(new T.Vector3(12, 16, 21));
-          camera.lookAt(look);
-          camera.updateMatrixWorld();
-          const p = new T.Vector3(...point).project(camera);
-          return {x: box.x + (p.x + 1) * box.width / 2, y: box.y + (1 - p.y) * box.height / 2};
-        }, {pose: focus[previous], point});
-        await page.touchscreen.tap(coord.x, coord.y);
-        assert.equal(await page.locator('[data-zone="' + zone + '"]').getAttribute('aria-pressed'), 'true');
-        previous = zone;
-      }
-      assert.equal(await page.locator('[data-node="2"]').getAttribute('aria-pressed'), 'true');
+    const {page, step, phase, elapsed} = await visit(context);
+    assert.equal(await page.locator('.fallback').count(), 0);
+    const geometry = async selector => page.evaluate(selector => {
+      const canvas = document.getElementById('world').getBoundingClientRect();
+      const target = document.querySelector(selector).getBoundingClientRect();
+      return {canvasArea: canvas.width * canvas.height / (innerWidth * innerHeight), scroll: document.documentElement.scrollWidth,
+        width: innerWidth, onCanvas: target.x >= 0 && target.right <= innerWidth && target.y > innerHeight * .13 &&
+        target.bottom <= innerHeight * .85, tappable: target.height >= 44};
+    }, selector);
+    const boxes = await geometry('#venue');
+    assert.ok(boxes.canvasArea >= .98 && boxes.onCanvas && boxes.tappable && boxes.scroll <= boxes.width);
+    if (width < 500) await page.locator('#venue').tap();
+    else await page.keyboard.press('Enter');
+    for (const id of [0, 2]) {
+      const target = await geometry(rack(id));
+      assert.ok(target.onCanvas && target.tappable);
     }
-    await open('data');
-    assert.ok(await fits(page, ['#clock', '#guide', '#detail', '#route', '#drone']), width + ' active layout');
-    console.log(width + '×' + height, 'controls in view' + (width === 360 ? '; touch picked all three areas and a rack' : ''));
+    const [fast,cool] = await Promise.all([page.locator(rack(0)).boundingBox(),page.locator(rack(2)).boundingBox()]);
+    assert.ok(fast.x + fast.width < cool.x || cool.x + cool.width < fast.x);
+    if (width < 500) await page.locator(rack(0)).tap();
+    else await page.keyboard.press('Enter');
+    assert.equal(await phase(), 'playing');
+    assert.equal(await elapsed(), 0);
+    await step(6);
+    assert.match(await page.locator('#guide').textContent(), /فوری.*۳ ثانیه/);
+    if (width < 500) await page.locator(rack(0)).tap();
+    else {
+      await page.locator(rack(2)).focus();
+      await page.keyboard.press('Enter');
+    }
+    await step(width < 500 ? 2 : 4);
+    assert.match(await page.locator('#guide').textContent(), width < 500 ? /وارد پخش/ : /دیر رسید/);
+    console.log(width + '×' + height, 'full-viewport map with distinct visible controls;',
+      width < 500 ? 'touch chose the express route on time' : 'keyboard chose the cooler route and missed the live deadline');
     await context.close();
   }
 }
 
-async function packageChecks(browser) {
-  const offline = await browser.newContext({viewport: {width: 360, height: 800}, offline: true});
-  let network = 0;
-  offline.on('request', req => { if (/^https?:/.test(req.url())) network++; });
-  const packaged = await visit(offline, {
-    url: pathToFileURL(resolve('dist-offline/arvan-shahr-concert.html')).href, noWebGL: true,
+async function packages(browser) {
+  const offline = await browser.newContext({viewport:{width:360,height:800}, offline:true});
+  let requests = 0;
+  offline.on('request', req => { if (/^https?:/.test(req.url())) requests++; });
+  const flat = await visit(offline, {
+    url:pathToFileURL(resolve('dist-offline/arvan-shahr-concert.html')).href, flat:true, noMedia:true,
   });
-  assert.ok(await packaged.page.locator('#opening-continue').isVisible());
-  assert.equal(await packaged.page.locator('#opening-video').getAttribute('src'), null);
-  await play(packaged);
-  assert.equal(network, 0);
-  console.log('offline file: full win and replay, WebGL disabled, zero HTTP requests');
+  assert.ok(await flat.page.locator('#stage[data-flat]').isVisible());
+  await play(flat);
+  assert.equal(requests, 0);
   await offline.close();
+  console.log('Standalone file completed flat-map win and replay with zero HTTP requests.');
 
-  const edge = await browser.newContext({viewport: {width: 390, height: 844}});
+  const edge = await browser.newContext({viewport:{width:390,height:844}});
   let handler;
-  runInNewContext(readFileSync('dist-edge/arvan-shahr-concert.worker.js', 'utf8'), {
+  runInNewContext(readFileSync('dist-edge/arvan-shahr-concert.worker.js','utf8'), {
     addEventListener: (_, fn) => { handler = fn; }, Response, URL,
   });
   await edge.route('https://concert-edge.test/**', async route => {
     let response;
-    handler({request: new Request(route.request().url()), respondWith: value => { response = value; }});
-    await route.fulfill({status: response.status, headers: Object.fromEntries(response.headers), body: await response.text()});
+    handler({request:new Request(route.request().url()),respondWith:value=>{response=value;}});
+    await route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:await response.text()});
   });
-  const worker = await visit(edge, {url: 'https://concert-edge.test/'});
-  assert.ok(await worker.page.locator('#opening-continue').isVisible());
-  assert.equal(await worker.page.locator('#opening-video').getAttribute('src'), null);
-  await play(worker);
-  console.log('built Edge worker: full win and replay from intercepted Worker responses');
+  await play(await visit(edge,{url:'https://concert-edge.test/',noMedia:true}));
+  console.log('Built Edge worker completed local win and replay.');
   await edge.close();
 }
 
-async function main() {
-  const browser = await chromium.launch({
-    channel: 'chrome',
-    args: ['--autoplay-policy=no-user-gesture-required'],
-  });
+(async () => {
+  const browser = await chromium.launch({channel:'chrome'});
   try {
-    const desktop = await browser.newContext({viewport: {width: 1120, height: 850}});
-    const first = await visit(desktop);
-    await play(first);
-    await first.page.close();
-    if (!real) {
-      for (const kind of ['idle', 'blackout']) {
-        const other = await visit(desktop);
-        await play(other, kind);
-        await other.page.close();
-      }
-      await mobileChecks(browser);
-      await packageChecks(browser);
+    const context = await browser.newContext({viewport:{width:1060,height:820}});
+    for (const kind of ['win','idle','blackout']) {
+      const run = await visit(context);
+      await play(run,kind);
+      await run.page.close();
     }
-  } finally {
-    await browser.close();
-  }
-}
-main().catch(error => { console.error(error); process.exitCode = 1; });
+    await context.close();
+    await layouts(browser);
+    const mobile = await browser.newContext({
+      viewport:{width:360,height:800}, hasTouch:true, isMobile:true, deviceScaleFactor:1,
+    });
+    await play(await visit(mobile,{touch:true}));
+    await mobile.close();
+    console.log('360×800: complete WebGL mission with touch dispatch, drone targeting, backup and replay.');
+    await packages(browser);
+  } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

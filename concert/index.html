@@ -10,7 +10,7 @@
  <div class="opening-story">
   <p class="eyebrow">امشب از آروان‌شهر، پخش زنده داریم</p>
   <h1 id="opening-title">پخش کنسرت دست توست.</h1>
-  <p>تو مسئول پخش زنده در اتاق کنترل شهری. تماشاگران منتظرند و باید سیگنال کنسرت را به شهر برسانی.</p>
+  <p>تو اپراتور پخش و خلبان پهپادی. سیگنال کنسرت را به شهر برسان و پخش را زنده نگه دار.</p>
  </div>
  <div class="opening-media" id="opening-media" hidden>
   <video id="opening-video" muted playsinline preload="none" tabindex="-1" aria-label="نمای افتتاحیهٔ آروان‌شهر"></video>
@@ -23,43 +23,33 @@
  <button class="primary" id="opening-continue" hidden>ورود به اتاق کنترل</button>
 </section>
 <main class="shell">
-<header class="top">
- <div><div class="eyebrow">ایستگاه فرماندهی · مأموریت ۰۱</div><h1>آروان‌شهر <span>شب کنسرت</span></h1></div>
- <div class="timer"><small>زمان باقی‌مانده</small><strong id="clock" dir="ltr">۰۷:۰۰</strong></div>
-</header>
-<section class="status" aria-label="وضعیت شهر">
- <div><small>پخش زنده</small><strong id="stream">آماده</strong></div><div><small>اعتماد تماشاگران</small><strong id="trust">۱۰۰٪</strong></div><div><small>صف ورودی</small><strong id="queue">۱ بسته</strong></div>
-</section>
-<div class="stage" id="stage">
- <canvas id="world" aria-label="نمای سه‌بعدی شهر، برای انتخاب بدون اشاره‌گر از دکمه‌های پایین استفاده کنید"></canvas>
- <div class="tag tag-venue">۰۱ · محوطهٔ کنسرت</div><div class="tag tag-data">۰۲ · دیتاسنتر</div><div class="tag tag-control">۰۳ · مرکز کنترل</div>
- <div class="actions-top"><button id="mute" aria-pressed="true">صدا: قطع</button><button id="pause" disabled>مکث</button><button id="zoom" aria-pressed="false">زوم +</button></div>
- <section class="overlay" id="overlay" aria-labelledby="overlay-title"><div class="intro">
- <p class="eyebrow" id="overlay-kicker">زنده از آروان‌شهر</p><h2 id="overlay-title">کنسرت نباید قطع شود.</h2>
- <p id="overlay-copy">امشب مسئول پخش زندهٔ کنسرتی. سیگنال را به شهر برسان و پخش را هفت دقیقه سرپا نگه دار.</p>
- <dl id="summary" class="summary" hidden></dl><button class="primary" id="start">ورود به اتاق کنترل</button><button id="show-opening" type="button">دیدن داستان</button>
- </div></section>
-</div>
-<section class="first-signal" id="first-step" aria-labelledby="first-title" hidden>
- <h2 id="first-title">اولین سیگنال کنسرت را بفرست</h2>
- <p>مسیر روشن، صحنه را به شبکهٔ شهر وصل می‌کند. با فرستادن سیگنال، هفت دقیقه فرصت داری پخش زنده را سرپا نگه داری.</p>
- <button class="primary" id="first-signal">فرستادن سیگنال کنسرت</button>
-</section>
-<section class="brief" aria-label="راهنمای مأموریت">
- <div><p id="guide" tabindex="-1">یک بسته برای شروع آماده است.</p><p id="alert" role="status">آمادهٔ شروع مأموریت</p></div>
- <button id="jump" hidden></button>
-</section>
-<nav class="districts" aria-label="مناطق شهر">
- <button data-zone="venue" aria-pressed="false">کنسرت</button><button data-zone="data" aria-pressed="true">دیتاسنتر</button><button data-zone="control" aria-pressed="false">مرکز کنترل</button>
-</nav>
-<section class="console" aria-label="کنترل مأموریت">
- <div class="console-top"><strong id="selection">رک سپهر</strong><small id="detail">پهپاد آماده</small></div>
- <div class="node-picks" id="node-picks"><button data-node="0" aria-pressed="true">سپهر</button><button data-node="1" aria-pressed="false">باران</button><button data-node="2" aria-pressed="false">تابان</button></div>
- <div class="commands" id="commands">
-  <button id="route">ارسال بسته</button><button id="drone">اعزام پهپاد</button>
-  <button id="backup" hidden>پخش پشتیبان</button><button id="audience" hidden>اطلاع به تماشاگران</button>
+ <div class="stage" id="stage">
+  <canvas id="world" aria-label="نقشهٔ شهر"></canvas>
+  <header class="hud">
+   <div class="mission-label"><small>آروان‌شهر</small><strong>شب کنسرت</strong></div>
+   <div class="on-air"><small id="stream">آماده</small><strong id="clock" dir="ltr">۰۷:۰۰</strong></div>
+   <div class="hud-tools"><button id="pause" aria-label="مکث">Ⅱ</button><button id="mute" aria-label="صدا: قطع" aria-pressed="true">♪</button></div>
+  </header>
+  <div class="meter" id="meter" hidden><span id="trust" aria-label="اعتماد تماشاگران"></span><span id="queue" aria-label="سیگنال در صف"></span></div>
+  <nav id="map-controls" class="map-controls" aria-label="نقشهٔ عملیاتی شهر" hidden>
+   <button class="marker source" id="venue" data-mark="venue"><strong>کنسرت</strong><small>گرفتن سیگنال</small></button>
+   <button class="marker rack" data-node="0" data-mark="rack0"><strong>سپهر</strong><small></small></button>
+   <button class="marker rack" data-node="1" data-mark="rack1"><strong>باران</strong><small></small></button>
+   <button class="marker rack" data-node="2" data-mark="rack2"><strong>تابان</strong><small></small></button>
+   <button class="marker control" id="control" data-mark="control"><strong>کنترل</strong><small>پشتیبان</small></button>
+  </nav>
+  <section class="mission-dock" id="dock" aria-label="هدف و اقدام مأموریت" hidden>
+   <p id="goal">پخش کنسرت را ۷ دقیقه زنده نگه دار</p>
+   <p id="guide" tabindex="-1" role="status"></p>
+   <p id="alert" class="sr-only" role="status"></p>
+   <button id="drone" hidden aria-pressed="false">پهپاد · انتخاب مقصد</button>
+   <div id="decision" class="decision" hidden><small id="decision-time"></small><button id="policy-stream">حفظ پخش</button><button id="policy-entry">تسریع ورود</button></div>
+  </section>
+  <section class="overlay" id="overlay" aria-labelledby="overlay-title"><div class="intro">
+   <p class="eyebrow" id="overlay-kicker">زنده از آروان‌شهر</p><h2 id="overlay-title">کنسرت نباید قطع شود.</h2>
+   <p id="overlay-copy">سیگنال را از صحنه به شهر برسان. هفت دقیقه پخش را زنده نگه دار.</p>
+   <dl id="summary" class="summary" hidden></dl><button class="primary" id="start">ورود به نقشه</button><button id="show-opening">دیدن افتتاحیه</button>
+  </div></section>
  </div>
- <div class="decision" id="decision" hidden><span id="decision-time"></span><button id="policy-stream">حفظ پخش</button><button id="policy-entry">تسریع ورود</button><small>حفظ پخش: صف کندتر · تسریع ورود: حاشیهٔ پخش کمتر</small></div>
-</section>
 </main><script type="module" src="./main.mjs"></script>
 </body></html>

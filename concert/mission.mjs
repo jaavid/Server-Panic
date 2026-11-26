@@ -1,6 +1,11 @@
 export const DURATION = 420;
 export const BLACKOUT_LIMIT = 27;
 export const NODES = ['سپهر', 'باران', 'تابان'];
+export const ROUTES = [
+  { duration: 2, heat: 9, label: 'سریع · داغ‌تر' },
+  { duration: 3, heat: 5, label: 'متعادل' },
+  { duration: 4, heat: 2, label: 'کند · خنک‌تر' },
+];
 export const EVENTS = [
   { t: 28, type: 'rush', label: 'موج ورود تماشاگرها' },
   { t: 96, type: 'heat', node: 1, label: 'اختلال خنک‌کنندهٔ باران' },
@@ -15,8 +20,8 @@ export function createMission(seed = 1) {
   return {
     seed: seed >>> 0, time: 0, trust: 100, quality: 100, result: null, reason: null, score: 200,
     queue: [{ id: 1, since: 0 }], sequence: 1, generated: 1, served: 0, lost: 0, peakQueue: 1,
-    nodes: [25, 24, 26].map(heat => ({ heat, work: 0, packet: null, offline: false })),
-    manualServed: 0, repairs: 0, notices: 0, blackoutTotal: 0,
+    nodes: [25, 24, 26].map(heat => ({ heat, work: 0, packet: null, lastDelivery: null, offline: false })),
+    manualServed: 0, priorityServed: 0, repairs: 0, notices: 0, blackoutTotal: 0,
     drone: { target: -1, arrive: 0, ready: 0 },
     backup: { arrive: 0, active: false }, outage: false, blackSeconds: 0,
     audience: { until: 0, ready: 0 },
@@ -51,8 +56,9 @@ export function availableRack(s) {
 function assign(s, id, manual) {
   if (!canRoute(s, id)) return false;
   const node = s.nodes[id];
-  node.packet = { ...s.queue.shift(), manual };
-  node.work = 3;
+  const profile = manual ? ROUTES[id] : ROUTES[1];
+  node.packet = { ...s.queue.shift(), manual, heat: profile.heat };
+  node.work = profile.duration;
   return true;
 }
 
@@ -69,7 +75,7 @@ export function command(s, action, arg) {
   if (s.result) return false;
   if (action === 'route') {
     if (!assign(s, arg, true)) return false;
-    s.alert = 'بسته به رک «' + NODES[arg] + '» منتقل شد.';
+    s.alert = 'سیگنال به ایستگاه «' + NODES[arg] + '» فرستاده شد.';
     return true;
   }
   if (action === 'drone') {
@@ -95,18 +101,18 @@ export function command(s, action, arg) {
   return false;
 }
 
-function enqueue(s, count) {
+function enqueue(s, count, priority = false) {
   for (let i = 0; i < count; i++) {
     s.generated++;
     if (s.queue.length >= 11) { s.lost++; continue; }
-    s.queue.push({ id: ++s.sequence, since: s.time });
+    s.queue.push({ id: ++s.sequence, since: s.time, due: priority ? s.time + 3 : null });
   }
   s.peakQueue = Math.max(s.peakQueue, s.queue.length);
 }
 
 function failRack(s, id) {
   const node = s.nodes[id];
-  if (node.packet) s.lost++;
+  if (node.packet) finishPacket(s, node, false);
   Object.assign(node, { heat: 100, offline: true, work: 0, packet: null });
   s.alert = 'رک «' + NODES[id] + '» از مدار خارج شد. پهپاد را اعزام کن.';
 }
@@ -128,6 +134,17 @@ function handleEvent(s, event) {
   }
 }
 
+function finishPacket(s, node, delivered) {
+  const packet = node.packet;
+  const timely = delivered && (packet.due == null || s.time <= packet.due);
+  if (timely) {
+    s.served++;
+    if (packet.manual) s.manualServed++;
+    if (packet.due != null) s.priorityServed++;
+  } else s.lost++;
+  if (packet.manual) node.lastDelivery = { id: packet.id, timely: Boolean(timely) };
+}
+
 function updateRacks(s) {
   for (const [id, node] of s.nodes.entries()) {
     if (node.offline) continue;
@@ -135,12 +152,11 @@ function updateRacks(s) {
       node.heat = Math.max(22, node.heat - 1);
       continue;
     }
-    node.heat += 5;
+    node.heat += node.packet?.heat ?? 5;
     if (node.heat >= 100) {
       failRack(s, id);
     } else if (--node.work === 0) {
-      s.served++;
-      if (node.packet?.manual) s.manualServed++;
+      if (node.packet) finishPacket(s, node, true);
       node.packet = null;
     }
   }
@@ -180,8 +196,12 @@ export function tick(s) {
   const policy = s.policy.mode;
   const rush = s.time < s.rushUntil;
   const arrivals = rush ? (s.time >= 374 ? 2 : 3) : 6;
-  if (s.time % arrivals === 0) enqueue(s, 1);
-  while (s.queue[0] && s.time - s.queue[0].since >= 16) { s.queue.shift(); s.lost++; }
+  if (s.time % arrivals === 0) enqueue(s, 1, s.time === 6 || (rush && s.time % 9 === 0));
+  s.queue = s.queue.filter(packet => {
+    if (s.time - packet.since < 16 && (packet.due == null || s.time < packet.due)) return true;
+    s.lost++;
+    return false;
+  });
   updateServices(s);
   updateRacks(s);
   const autoCycle = policy === 'entry' ? 5 : policy === 'stream' ? 12 : (s.backup.active || rush ? 11 : 8);
@@ -200,7 +220,7 @@ export function tick(s) {
     s.quality < 70 ? (notice ? -.35 : -.95) : s.quality < 84 ? -.12 : .55;
   s.trust = clamp(s.trust + trustChange, 0, 100);
   s.score = Math.max(0, Math.round(s.served * 12 + s.manualServed * 5 - s.lost * 5 +
-    s.trust * 2 + s.decisions * 15 + s.repairs * 20));
+    s.trust * 2 + s.priorityServed * 8 + s.decisions * 15 + s.repairs * 20));
   if (s.blackSeconds >= BLACKOUT_LIMIT || s.trust <= 0) {
     s.result = 'loss';
     s.reason = s.blackSeconds >= BLACKOUT_LIMIT ? 'blackout' : 'trust';

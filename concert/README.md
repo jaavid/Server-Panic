@@ -7,14 +7,14 @@ Concert Night has its own playable entry at `/concert/` and at `/` in its dedica
 Serve the source worktree from its root.
 
 ```sh
-python3 -m http.server 8770 --bind 127.0.0.1
+python3 -m http.server 8771 --bind 127.0.0.1
 ```
 
-Open [Concert Night](http://127.0.0.1:8770/concert/). The Persian opening explains your role and the goal. Skip is available from the beginning. Your first signal starts the seven-minute timer, and replay begins at that action. The incident guide names the next useful action and links to the corresponding area.
+Open [Concert Night](http://127.0.0.1:8771/concert/). The Persian opening explains your role and the goal. Skip is available from the beginning. Tap the concert on the map and choose a relay. The clock starts when you dispatch that first signal. Replay returns to the map. Use the same map buttons on touch or with Tab and Enter.
 
 The source and packaged builds display the written story by default. A preview server can set same-origin video and poster URLs through `data-opening-video` and `data-opening-poster` on the root HTML element. Configured media starts muted, with timed story copy. Reduced motion keeps it still until the player chooses Play. The private video and poster are supplied separately by the preview and are absent from the offline and Edge packages.
 
-- **Datacenter** · Route queued packets to free racks. Send the drone to recover an offline rack or cool a hot one. Alternate racks during sustained bursts.
+- **Datacenter** · Route queued signals directly to a station. Sepehr takes two seconds and adds 18 heat, Baran takes three and adds 15, and Taban takes four and adds 8. A live urgent signal has a three-second deadline. Equip the drone, then choose an offline station to repair or a hot station to cool. Drone recharge limits how often you can do either.
 - **Concert** · Inform the audience during service degradation to reduce trust loss for 15 seconds. The notice is available again after 60 seconds.
 - **Control** · Start backup during the ingest outage. It takes five seconds to come online and has lower capacity than the primary feed. The blackout has a 27-second limit.
 - **Service priorities** · Choose a temporary tradeoff between stable broadcast and faster entry. The choices expire if ignored.
@@ -36,9 +36,8 @@ With Playwright and Chrome installed, run the source browser checks while the lo
 
 ```sh
 node tests/concert/browser-flow.cjs
-node tests/concert/browser-flow.cjs --real
 ```
 
-Set `PLAYWRIGHT_MODULE` if Playwright is installed outside this checkout. Run `node tests/concert/opening-flow.cjs` against a preview server with the eight-second video to verify the actual intro, its controls, and fallback. The accelerated mission checks cover both loss paths, victory, pause, replay, mobile layout and picking, offline play without WebGL, and a simulated Edge service. The normal-speed run takes about seven minutes and uses the same controls as a player.
+Set `PLAYWRIGHT_MODULE` if Playwright is installed outside this checkout. Run `node tests/concert/opening-flow.cjs` against a preview server with the eight-second video to verify the actual intro, its controls, and fallback. The opening check runs the real clip and the first live deadline at normal speed. The accelerated mission checks cover both losses, victory, pause, replay, phone and desktop map layouts, offline play without WebGL, and a simulated Edge worker.
 
 The compiled Edge worker is `dist-edge/arvan-shahr-concert.worker.js`. The local verification runs it without credentials or deployment. The generated offline and Edge packages use the built-in procedural city. Three.js r180 is pinned at upstream commit `0af9729` and included with its MIT license. Physical Android performance and the live Arvan runtime still need separate verification.

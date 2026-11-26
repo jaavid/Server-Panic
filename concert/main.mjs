@@ -1,171 +1,162 @@
 import {
-  availableRack, BLACKOUT_LIMIT, canBackup, canDrone, canNotify, canRoute, command,
-  createMission, DURATION, EVENTS, NODES, tick,
+  BLACKOUT_LIMIT, canBackup, canDrone, canNotify, canRoute, command,
+  createMission, DURATION, EVENTS, NODES, ROUTES, tick,
 } from './mission.mjs';
 import {city} from './city.mjs';
 
 const ids = [
-  'world', 'stage', 'clock', 'stream', 'trust', 'queue', 'guide', 'alert', 'jump',
-  'selection', 'detail', 'route', 'drone', 'backup', 'audience', 'first-step', 'first-signal', 'decision',
-  'decision-time', 'node-picks', 'policy-entry', 'policy-stream', 'overlay',
-  'overlay-title', 'overlay-kicker', 'overlay-copy', 'summary', 'start', 'pause', 'mute', 'zoom',
-  'opening', 'opening-skip', 'opening-media', 'opening-video', 'opening-play', 'opening-sound',
-  'opening-continue', 'opening-caption', 'opening-still', 'opening-video-actions', 'show-opening',
+  'world', 'stage', 'clock', 'stream', 'trust', 'queue', 'goal', 'meter', 'guide', 'alert',
+  'map-controls', 'dock', 'venue', 'control', 'drone', 'decision', 'decision-time',
+  'policy-entry', 'policy-stream', 'overlay', 'overlay-title', 'overlay-kicker',
+  'overlay-copy', 'summary', 'start', 'pause', 'mute', 'opening', 'opening-skip',
+  'opening-media', 'opening-video', 'opening-play', 'opening-sound', 'opening-continue',
+  'opening-caption', 'opening-still', 'opening-video-actions', 'show-opening',
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+const racks = [...document.querySelectorAll('[data-node]')];
+const markers = [...document.querySelectorAll('[data-mark]')];
 const numbers = new Intl.NumberFormat('fa-IR', {useGrouping: false});
 const padded = new Intl.NumberFormat('fa-IR', {minimumIntegerDigits: 2, useGrouping: false});
 const num = value => numbers.format(value);
 const clock = seconds => padded.format(Math.floor(seconds / 60)) + ':' + padded.format(seconds % 60);
-const zones = [...document.querySelectorAll('[data-zone]')];
-const nodes = [...document.querySelectorAll('[data-node]')];
+const seconds = value => num(Math.max(0, value)) + ' ثانیه';
+const set = (el, text) => { if (el.textContent !== text) el.textContent = text; };
+let state = createMission(), phase = 'menu', armed = false, pilot = false;
+let route = null, repairNote = null, selected = -1, remaining = 0, frameTime, animation = 0, sound, muted = true;
+const view = city(ui.world, markers, (area, id) => {
+  if (area === 'venue') chooseVenue();
+  if (area === 'control') chooseControl();
+  if (area === 'data' && Number.isInteger(id)) chooseRack(id);
+});
 
-let state = createMission();
-let phase = 'menu';
-let selected = 0;
-let zone = 'data';
-let recommendation;
-let remaining = 0;
-let frameTime;
-let animation = 0;
-let sound;
-let muted = true;
-let zoomed = false;
-const view = city(ui.world, select);
-
-function select(target, id) {
-  if (phase !== 'playing' && phase !== 'training') return;
-  zone = target;
-  if (Number.isInteger(id)) selected = id;
-  zones.forEach(el => el.setAttribute('aria-pressed', String(el.dataset.zone === zone)));
-  nodes.forEach(el => el.setAttribute('aria-pressed', String(Number(el.dataset.node) === selected)));
-  view.focus(zone);
-  update();
-}
-
-function set(el, text) {
-  if (el.textContent !== text) el.textContent = text;
-}
-
-function seconds(value) {
-  return num(Math.max(0, value)) + ' ثانیه';
-}
-
-function guide() {
-  if (phase !== 'playing') return {text: phase === 'paused' ? 'زمان و رویدادها در مکث متوقف‌اند.' :
-    phase === 'result' ? 'نتیجهٔ این اجرا در گزارش مأموریت است.' : 'یک بسته برای شروع آماده است.'};
-  if (state.time < 6) return {text: state.manualServed ?
-    'سیگنال کنسرت وارد شبکهٔ پخش شد. پخش را تا پایان هفت دقیقه سرپا نگه دار.' :
-    'سیگنال روی مسیر روشن به ایستگاه سپهر می‌رود.'};
-  if (canBackup(state)) return {
-    text: 'قطع پخش · ' + seconds(BLACKOUT_LIMIT - state.blackSeconds) + ' تا پایان مهلت. پشتیبان را روشن کن.',
-    urgent: true, target: 'control', label: 'رفتن به کنترل',
-  };
-  if (state.outage && !state.backup.active) return {
-    text: 'پشتیبان تا ' + seconds(state.backup.arrive - state.time) + ' دیگر راه می‌افتد.',
-    urgent: true,
-  };
-  if (state.drone.target >= 0) return {
-    text: 'پهپاد در راه «' + NODES[state.drone.target] + '» · ' + seconds(state.drone.arrive - state.time) + ' تا رسیدن.',
-  };
-  const repair = state.nodes.findIndex((node, id) => node.offline && canDrone(state, id));
-  if (repair !== -1) return {
-    text: 'رک «' + NODES[repair] + '» قطع است. پهپاد را برای بازیابی بفرست.',
-    urgent: true, target: 'data', node: repair, label: 'انتخاب ' + NODES[repair],
-  };
-  if (state.decision) return {text: 'اولویت را برای ' + seconds(36) + ' آینده انتخاب کن. گزینه‌ها پایین‌اند.'};
+function brief() {
+  if (phase === 'training') return armed ?
+    'روی یک ایستگاه بزن. سپهر سریع‌تر است؛ تابان کمتر داغ می‌شود.' :
+    'برای گرفتن اولین سیگنال، روی کنسرت بزن.';
+  if (canBackup(state)) return 'پخش قطع شد · ' + seconds(BLACKOUT_LIMIT - state.blackSeconds) + ' مهلت. روی «کنترل» بزن.';
+  if (state.outage && !state.backup.active) return 'پشتیبان تا ' + seconds(state.backup.arrive - state.time) + ' دیگر بالا می‌آید.';
+  if (pilot) return 'روی ایستگاه داغ یا قطع‌شده بزن. پهپاد پس از اعزام باید شارژ شود.';
+  if (state.drone.target >= 0) return 'پهپاد در راه «' + NODES[state.drone.target] + '» · ' + seconds(state.drone.arrive - state.time);
+  const offline = state.nodes.findIndex((node, id) => node.offline && canDrone(state, id));
+  if (offline !== -1) return '«' + NODES[offline] + '» قطع است. پهپاد را بردار و مقصد را روی نقشه بزن.';
+  if (repairNote && state.time < repairNote.until) return repairNote.text;
+  const due = state.queue[0]?.due;
+  if (due != null) return 'سیگنال فوری · ' + seconds(due - state.time) + ' مهلت. زمان مسیرها را بسنج.';
+  if (route && state.time - route.start < route.duration + 2) {
+    const node = state.nodes[route.id], name = NODES[route.id];
+    if (node.packet?.id === route.packetId) return 'سیگنال در راه «' + name + '» · ' + seconds(node.work) + ' تا رسیدن';
+    if (node.lastDelivery?.id === route.packetId && !node.lastDelivery.timely) {
+      return node.offline ? 'ایستگاه «' + name + '» قطع شد.' : 'سیگنال دیر رسید · برای سیگنال فوری مسیر سریع‌تر بگیر.';
+    }
+    return 'سیگنال از مسیر «' + name + '» وارد پخش شد.';
+  }
   const event = EVENTS[state.event];
-  if (event && state.warned === state.event) {
-    return {
-      text: event.label + ' · ' + seconds(event.t - state.time) + ' دیگر',
-      urgent: event.type === 'outage', target: event.type === 'outage' ? 'control' : undefined,
-      label: 'رفتن به کنترل',
-    };
+  if (event && state.warned === state.event) return event.label + ' · ' + seconds(event.t - state.time) + ' دیگر';
+  if (state.queue.length) {
+    if (state.time < 32) return 'سیگنال تازه رسید. برای سرعت یا خنکی، یک ایستگاه انتخاب کن.';
+    return num(state.queue.length) + ' سیگنال منتظر است · روی ایستگاه آزاد بزن.';
   }
-  const rack = availableRack(state);
-  if (rack !== -1 && (state.queue.length >= 2 || (state.queue.length && state.time < 20))) {
-    const target = zone === 'data' && canRoute(state, selected) && state.nodes[selected].heat < 82 ? selected : rack;
-    return {
-      text: num(state.queue.length) + ' بسته در صف · به رک «' + NODES[target] + '» بفرست.',
-      urgent: state.queue.length >= 5, target: 'data', node: target, label: 'انتخاب ' + NODES[target],
-    };
-  }
-  const hot = state.nodes.findIndex((node, id) => node.heat >= 75 && canDrone(state, id));
-  if (hot !== -1) return {
-    text: 'رک «' + NODES[hot] + '» داغ است. با پهپاد خنکش کن یا از رک دیگر استفاده کن.',
-    target: 'data', node: hot, label: 'انتخاب ' + NODES[hot],
-  };
-  if (canNotify(state)) return {
-    text: 'پخش ناپایدار است. از محوطهٔ کنسرت به تماشاگران خبر بده.',
-    target: 'venue', label: 'رفتن به کنسرت',
-  };
-  if (state.queue.length && rack === -1) return {text: 'برای ارسال بسته، منتظر آزاد شدن یکی از رک‌ها بمان.'};
-  if (state.backup.active) return {text: 'پخش پشتیبان برقرار است. صف را کوتاه نگه دار تا کنسرت تمام شود.'};
-  return {text: 'پخش برقرار است. وضعیت صف و دمای رک‌ها را زیر نظر بگیر.'};
+  if (canNotify(state)) return 'برای حفظ اعتماد، از روی صحنه به تماشاگران خبر بده.';
+  return state.backup.active ? 'پخش پشتیبان برقرار است.' : 'پخش برقرار است.';
 }
 
-function rackStatus(node) {
-  return node.offline ? 'قطع' : node.heat >= 75 ? 'داغ' : node.work ? 'مشغول' : 'آزاد';
-}
-
-function zoneStatus() {
-  if (zone === 'data') {
-    const node = state.nodes[selected];
-    return 'رک ' + NODES[selected] + ' · ' + rackStatus(node) + ' · ' + num(node.heat) + '°';
-  }
-  if (zone === 'venue') {
-    if (state.audience.until > state.time) return 'خبررسانی فعال · ' + seconds(state.audience.until - state.time);
-    if (state.audience.ready > state.time) return 'خبررسانی دوباره تا ' + seconds(state.audience.ready - state.time);
-    return 'کنسرت · کیفیت پخش ' + num(state.quality) + '٪';
-  }
-  return state.backup.active ? 'مرکز کنترل · پشتیبان فعال' :
-    state.backup.arrive ? 'مرکز کنترل · پشتیبان در حال راه‌اندازی' : 'مرکز کنترل · آمادهٔ پشتیبانی';
+function rackHint(node, id, training) {
+  if (pilot) return canDrone(state, id) ? (node.offline ? 'بازیابی' : 'خنک‌کردن') : '';
+  if (node.offline) return 'قطع';
+  if (node.work) return 'در انتقال';
+  if (training || state.time < 32 && state.queue.length) return num(ROUTES[id].duration) + 'ث · ' + ROUTES[id].label.split(' · ').at(-1);
+  if (node.heat >= 75) return 'داغ · ' + num(node.heat) + '°';
+  return state.queue.length ? num(ROUTES[id].duration) + 'ث' : '';
 }
 
 function update() {
-  const playing = phase === 'playing';
-  const interactive = playing;
-  const readyIn = state.drone.ready - state.time;
+  const training = phase === 'training', playing = phase === 'playing';
+  const openMap = training || playing;
+  if (pilot && !state.nodes.some((_, id) => canDrone(state, id))) pilot = false;
   set(ui.clock, clock(DURATION - state.time));
-  set(ui.stream, phase === 'menu' || phase === 'training' ? 'آماده' : state.quality === 0 ? 'قطع شده' :
-    state.quality < 70 ? 'ناپایدار' : state.backup.active ? 'پشتیبان' : 'برقرار');
-  ui.stream.className = state.quality < 70 ? 'danger' : 'healthy';
-  set(ui.trust, num(Math.ceil(state.trust)) + '٪');
-  set(ui.queue, num(state.queue.length) + ' بسته');
-  set(ui.alert, phase === 'menu' ? 'آمادهٔ شروع مأموریت' : state.alert);
-  ui['first-step'].hidden = phase !== 'training';
+  set(ui.stream, training || phase === 'menu' ? 'آماده' : state.quality === 0 ? 'پخش قطع' :
+    state.backup.active ? 'پشتیبان' : state.quality < 70 ? 'ناپایدار' : 'زنده');
+  ui.stream.classList.toggle('danger', state.quality < 70);
+  set(ui.trust, 'اعتماد ' + num(Math.ceil(state.trust)) + '٪');
+  set(ui.queue, state.queue[0]?.due != null ? 'فوری · ' + seconds(state.queue[0].due - state.time) :
+    'صف ' + num(state.queue.length));
+  ui.meter.hidden = !playing;
+  ui.dock.hidden = !openMap;
+  ui['map-controls'].hidden = !openMap;
+  ui.pause.disabled = !playing;
+  ui.mute.disabled = !playing;
   ui['show-opening'].hidden = phase !== 'menu';
-  document.body.dataset.phase = phase;
-  recommendation = guide();
-  set(ui.guide, recommendation.text);
-  ui.guide.classList.toggle('danger', Boolean(recommendation.urgent));
-  ui.jump.hidden = !interactive || !recommendation.target ||
-    (zone === recommendation.target && (recommendation.node === undefined || selected === recommendation.node));
-  if (!ui.jump.hidden) set(ui.jump, recommendation.label);
-  set(ui.selection, zoneStatus());
-  set(ui.detail, state.drone.target >= 0 ? 'پهپاد در راه' : readyIn > 0 ?
-    'شارژ پهپاد · ' + seconds(readyIn) : 'پهپاد آماده');
-  ui['node-picks'].hidden = zone !== 'data';
-  nodes.forEach((el, id) => {
+  set(ui.guide, brief());
+  set(ui.alert, state.alert);
+  ui.dock.classList.toggle('urgent', state.outage && !state.backup.active || state.queue[0]?.due != null);
+  ui.venue.hidden = training && armed;
+  const venueReady = training || playing && canNotify(state);
+  ui.venue.classList.toggle('actionable', venueReady);
+  ui.venue.setAttribute('aria-disabled', String(!venueReady));
+  set(ui.venue.lastElementChild, training ? 'گرفتن سیگنال' : canNotify(state) ? 'خبر به تماشاگران' : '');
+  ui.control.hidden = training;
+  const controlReady = playing && canBackup(state);
+  ui.control.classList.toggle('actionable', controlReady);
+  ui.control.setAttribute('aria-disabled', String(!controlReady));
+  set(ui.control.lastElementChild, canBackup(state) ? 'روشن‌کردن پشتیبان' : state.backup.active ? 'پشتیبان فعال' : '');
+  racks.forEach((button, id) => {
     const node = state.nodes[id];
-    el.disabled = !interactive;
-    el.dataset.status = node.offline ? 'offline' : node.heat >= 75 ? 'hot' : node.work ? 'busy' : 'free';
-    set(el, NODES[id] + ' · ' + rackStatus(node));
+    const available = pilot ? canDrone(state, id) : canRoute(state, id);
+    button.hidden = training && (!armed || id === 1);
+    button.disabled = !openMap || training && !armed;
+    button.classList.toggle('actionable', available);
+    button.setAttribute('aria-disabled', String(!available));
+    button.dataset.status = node.offline ? 'offline' : node.heat >= 75 ? 'hot' : node.work ? 'busy' : 'free';
+    set(button.lastElementChild, rackHint(node, id, training));
   });
-  for (const id of ['route', 'drone', 'backup', 'audience']) {
-    ui[id].hidden = zone !== (id === 'backup' ? 'control' : id === 'audience' ? 'venue' : 'data');
-  }
-  ui.route.disabled = !interactive || !canRoute(state, selected);
-  ui.drone.disabled = !playing || !canDrone(state, selected);
-  ui.backup.disabled = !playing || !canBackup(state);
-  ui.audience.disabled = !playing || !canNotify(state);
+  ui.drone.hidden = !playing || !state.nodes.some((_, id) => canDrone(state, id));
+  ui.drone.setAttribute('aria-pressed', String(pilot));
+  set(ui.drone, pilot ? 'لغو انتخاب مقصد' : 'پهپاد · انتخاب مقصد');
   ui.decision.hidden = !playing || !state.decision;
   if (!ui.decision.hidden) set(ui['decision-time'], 'اولویت · ' + seconds(state.decision.until - state.time));
-  ui.pause.disabled = !playing && phase !== 'paused';
-  zones.forEach(el => { el.disabled = !interactive; });
-  ui.stage.dataset.broadcast = state.quality === 0 ? 'outage' : state.backup.active ? 'backup' : 'primary';
+  document.body.dataset.phase = phase;
   ui.stage.dataset.phase = phase;
+  ui.stage.dataset.broadcast = state.quality === 0 ? 'outage' : state.backup.active ? 'backup' : 'primary';
   ui.stage.dataset.result = state.result ?? '';
+}
+
+function chooseVenue() {
+  if (phase === 'training' && !armed) {
+    armed = true;
+    audioTone(520);
+    update();
+    racks[0].focus({preventScroll: true});
+  } else if (phase === 'playing' && command(state, 'audience')) {
+    audioTone();
+    update();
+  }
+}
+
+function chooseControl() {
+  if (phase === 'playing' && command(state, 'backup')) {
+    audioTone(680);
+    update();
+  }
+}
+
+function chooseRack(id) {
+  if (phase === 'training' && (!armed || id === 1)) return;
+  if (phase !== 'training' && phase !== 'playing') return;
+  selected = id;
+  if (pilot) {
+    if (command(state, 'drone', id)) {
+      pilot = false;
+      audioTone(720);
+    }
+  } else if (command(state, 'route', id)) {
+    route = {id, packetId: state.nodes[id].packet.id, start: state.time, duration: ROUTES[id].duration};
+    if (phase === 'training') {
+      phase = 'playing';
+      remaining = 0;
+    }
+    audioTone(410);
+  }
+  update();
 }
 
 function audioTone(hz = 480, length = .15, gain = .045) {
@@ -188,6 +179,7 @@ function audioTone(hz = 480, length = .15, gain = .045) {
 
 function finish() {
   phase = 'result';
+  pilot = false;
   let best = state.score;
   try {
     best = Math.max(best, Number(localStorage.getItem('arvan-concert-best-v2')) || 0);
@@ -222,19 +214,15 @@ function start() {
   if (phase === 'paused') { togglePause(); return; }
   if (phase !== 'menu' && phase !== 'result') return;
   state = createMission(crypto.getRandomValues(new Uint32Array(1))[0]);
-  remaining = 0;
   phase = 'training';
+  armed = pilot = false;
+  route = repairNote = null;
+  selected = -1;
+  remaining = 0;
   ui.overlay.hidden = true;
   ui.summary.hidden = true;
-  select('data', 0);
-  audioTone();
-  ui['first-signal'].focus({preventScroll: true});
-}
-
-function startClock() {
-  phase = 'playing';
-  remaining = 0;
   update();
+  ui.venue.focus({preventScroll: true});
 }
 
 function togglePause() {
@@ -242,60 +230,39 @@ function togglePause() {
   const paused = phase === 'playing';
   phase = paused ? 'paused' : 'playing';
   ui.overlay.hidden = !paused;
-  set(ui.pause, paused ? 'ادامه' : 'مکث');
+  ui.pause.setAttribute('aria-label', paused ? 'ادامه' : 'مکث');
   if (paused) {
     set(ui['overlay-kicker'], 'مأموریت متوقف است');
-    set(ui['overlay-title'], 'استراحت کوتاه');
-    set(ui['overlay-copy'], 'با ادامهٔ مأموریت، از همین لحظه به کنسرت برمی‌گردی.');
-    set(ui.start, 'ادامهٔ مأموریت');
+    set(ui['overlay-title'], 'مکث');
+    set(ui['overlay-copy'], 'از همین لحظه به کنسرت برمی‌گردی.');
+    set(ui.start, 'ادامه');
     ui.start.focus();
   } else ui.pause.focus({preventScroll: true});
   update();
 }
 
-function run(action, argument) {
+ui.venue.addEventListener('click', chooseVenue);
+ui.control.addEventListener('click', chooseControl);
+racks.forEach((button, id) => button.addEventListener('click', () => chooseRack(id)));
+ui.drone.addEventListener('click', () => {
   if (phase !== 'playing') return;
-  if (command(state, action, argument)) audioTone(action === 'backup' ? 680 : 410);
+  pilot = !pilot;
   update();
-}
-
-zones.forEach(el => el.addEventListener('click', () => select(el.dataset.zone)));
-nodes.forEach(el => el.addEventListener('click', () => select('data', Number(el.dataset.node))));
-ui.jump.addEventListener('click', () => {
-  const {target, node} = recommendation;
-  select(target, node);
-  const button = target === 'control' ? ui.backup : target === 'venue' ? ui.audience :
-    ui.drone.disabled ? ui.route : ui.drone;
-  if (!button.disabled && !button.hidden) button.focus({preventScroll: true});
-  else zones.find(el => el.dataset.zone === target)?.focus({preventScroll: true});
+  if (pilot) {
+    const target = state.nodes.findIndex((node, id) => node.offline && canDrone(state, id));
+    const available = target === -1 ? state.nodes.findIndex((_, id) => canDrone(state, id)) : target;
+    if (available >= 0) racks[available].focus({preventScroll: true});
+  }
 });
-ui.route.addEventListener('click', () => run('route', selected));
-ui.drone.addEventListener('click', () => run('drone', selected));
-ui.backup.addEventListener('click', () => run('backup'));
-ui.audience.addEventListener('click', () => run('audience'));
-ui['policy-entry'].addEventListener('click', () => run('policy', 'entry'));
-ui['policy-stream'].addEventListener('click', () => run('policy', 'stream'));
-ui['first-signal'].addEventListener('click', () => {
-  if (phase !== 'training' || !command(state, 'route', 0)) return;
-  set(ui.alert, 'سیگنال کنسرت به ایستگاه سپهر فرستاده شد.');
-  state.alert = ui.alert.textContent;
-  audioTone(520);
-  startClock();
-  ui.guide.focus({preventScroll: true});
-});
+ui['policy-entry'].addEventListener('click', () => { if (command(state, 'policy', 'entry')) update(); });
+ui['policy-stream'].addEventListener('click', () => { if (command(state, 'policy', 'stream')) update(); });
 ui.start.addEventListener('click', start);
 ui.pause.addEventListener('click', togglePause);
 ui.mute.addEventListener('click', () => {
   muted = !muted;
   ui.mute.setAttribute('aria-pressed', String(muted));
-  set(ui.mute, 'صدا: ' + (muted ? 'قطع' : 'روشن'));
+  ui.mute.setAttribute('aria-label', muted ? 'صدا: قطع' : 'صدا: روشن');
   audioTone(580);
-});
-ui.zoom.addEventListener('click', () => {
-  zoomed = !zoomed;
-  ui.zoom.setAttribute('aria-pressed', String(zoomed));
-  set(ui.zoom, zoomed ? 'زوم −' : 'زوم +');
-  view.zoom(zoomed);
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && phase === 'playing') togglePause();
@@ -310,18 +277,19 @@ function frame(now) {
     while (remaining >= 1000 && !state.result) {
       remaining -= 1000;
       const event = state.event, warning = state.warned, blackout = state.quality === 0;
+      const target = state.drone.target;
       tick(state);
+      if (target >= 0 && state.drone.target < 0) {
+        repairNote = {text: 'پهپاد برگشت · «' + NODES[target] + '» آمادهٔ انتقال سیگنال است.', until: state.time + 4};
+      }
       if (state.result) finish();
       else if (event !== state.event || warning !== state.warned || blackout !== (state.quality === 0)) {
         audioTone(state.quality === 0 ? 255 : 570, .32);
-      } else if (state.time % 2 === 0) {
-        audioTone([164, 196, 220, 196][Math.floor(state.time / 2) % 4], .36, .014);
       }
       update();
     }
   }
-  view.render(state, selected, zone, state.time + remaining / 1000, animation,
-    phase === 'training' || ((phase === 'playing' || phase === 'paused') && state.time < 6));
+  view.render(state, selected, state.time + remaining / 1000, animation, route, phase === 'training' && armed);
   requestAnimationFrame(frame);
 }
 

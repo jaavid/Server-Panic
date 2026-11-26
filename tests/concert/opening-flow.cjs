@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const address = process.env.CONCERT_URL || 'http://127.0.0.1:8770/concert/';
+const address = process.env.CONCERT_URL || 'http://127.0.0.1:8771/concert/';
 const within = async (page, ...ids) => page.evaluate(selectors =>
   document.documentElement.scrollWidth <= innerWidth && selectors.every(selector => {
     const box = document.querySelector(selector).getBoundingClientRect();
@@ -20,7 +20,7 @@ async function verify() {
     await page.locator('#opening-skip').waitFor();
     assert.equal(await active(page), 'opening-skip');
     assert.ok(await within(page, '#opening-skip', '#opening-title', '#opening-play'));
-    assert.match(await page.locator('.opening-story').textContent(), /مسئول پخش زنده/);
+    assert.match(await page.locator('.opening-story').textContent(), /اپراتور پخش و خلبان/);
     await page.waitForFunction(() => document.getElementById('opening-video').currentTime > .25);
     assert.equal(await page.locator('#opening-video').evaluate(video => video.muted), true);
     assert.equal(await displayedClock(page), '۰۷:۰۰');
@@ -35,23 +35,27 @@ async function verify() {
     assert.equal(await displayedClock(page), '۰۷:۰۰');
     assert.ok(await within(page, '#opening-continue'));
     await page.locator('#opening-continue').tap();
-    assert.equal(await active(page), 'first-signal');
-    assert.equal(await page.locator('#route').isVisible(), false);
-    assert.equal(await page.locator('.status').isVisible(), false);
-    assert.ok(await within(page, '#first-title', '#first-signal'));
-    await page.waitForTimeout(1200);
+    assert.equal(await active(page), 'venue');
+    assert.equal(await page.locator('#map-controls button:visible').count(), 1);
+    assert.ok(await within(page, '#venue', '#goal'));
+    await page.waitForTimeout(400);
     assert.equal(await displayedClock(page), '۰۷:۰۰');
     await page.keyboard.press('Enter');
-    assert.equal(await active(page), 'guide');
+    assert.ok(await within(page, '[data-node="0"]', '[data-node="2"]'));
+    assert.equal(await displayedClock(page), '۰۷:۰۰');
+    await page.keyboard.press('Enter');
     assert.match(await page.locator('#guide').textContent(), /سیگنال.*سپهر/);
-    await page.waitForFunction(() => document.getElementById('guide').textContent.includes('وارد شبکهٔ پخش شد'));
+    await page.waitForFunction(() => document.getElementById('guide').textContent.includes('وارد پخش شد'));
     assert.notEqual(await displayedClock(page), '۰۷:۰۰');
+    await page.waitForFunction(() => document.getElementById('guide').textContent.includes('سیگنال فوری'));
+    await page.locator('[data-node="0"]').tap();
+    await page.waitForFunction(() => document.getElementById('guide').textContent.includes('وارد پخش شد'));
     await page.reload();
     await page.locator('#stage[data-phase=menu]').waitFor();
     assert.equal(await page.locator('#opening').isVisible(), false);
     await page.locator('#show-opening').tap();
     await page.locator('#opening-skip').tap();
-    assert.equal(await active(page), 'first-signal');
+    assert.equal(await active(page), 'venue');
     assert.deepEqual(errors, []);
     await fresh.close();
     console.log('Real eight-second video: muted play, keyboard pause, timed caption, end, touch continue, first result and returning visit');
@@ -64,7 +68,7 @@ async function verify() {
     await quiet.waitForTimeout(350);
     assert.equal(await quiet.locator('#opening-video').evaluate(video => video.currentTime), 0);
     await quiet.locator('#opening-skip').tap();
-    assert.equal(await active(quiet), 'first-signal');
+    assert.equal(await active(quiet), 'venue');
     await reduced.close();
 
     for (const delayed of [false, true]) {
@@ -81,7 +85,7 @@ async function verify() {
       assert.match(await fallback.locator('#opening-caption').textContent(), /پهپاد.*پشتیبان/);
       assert.equal(await displayedClock(fallback), '۰۷:۰۰');
       await fallback.locator('#opening-continue').click();
-      assert.equal(await active(fallback), 'first-signal');
+      assert.equal(await active(fallback), 'venue');
       await context.close();
     }
     console.log('320px reduced motion, missing video, and slow video all offer a focused first action without starting the timer');
