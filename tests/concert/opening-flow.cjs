@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const address = process.env.CONCERT_URL || 'http://127.0.0.1:8771/concert/';
+const address = process.env.CONCERT_URL || 'http://127.0.0.1:8772/concert/';
 const within = async (page, ...ids) => page.evaluate(selectors =>
   document.documentElement.scrollWidth <= innerWidth && selectors.every(selector => {
     const box = document.querySelector(selector).getBoundingClientRect();
@@ -30,7 +30,7 @@ async function verify() {
     await page.waitForTimeout(300);
     assert.equal(await page.locator('#opening-video').evaluate(video => video.currentTime), paused);
     await page.keyboard.press('Space');
-    await page.waitForFunction(() => document.getElementById('opening-caption').textContent.includes('ایستگاه‌ها'));
+    await page.waitForFunction(() => document.getElementById('opening-caption').textContent.includes('پهپاد را بفرست'));
     await page.waitForFunction(() => document.getElementById('opening-video').ended);
     assert.equal(await displayedClock(page), '۰۷:۰۰');
     assert.ok(await within(page, '#opening-continue'));

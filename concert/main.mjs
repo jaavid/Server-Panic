@@ -31,33 +31,33 @@ const view = city(ui.world, markers, (area, id) => {
 
 function brief() {
   if (phase === 'training') return armed ?
-    'روی یک ایستگاه بزن. سپهر سریع‌تر است؛ تابان کمتر داغ می‌شود.' :
-    'برای گرفتن اولین سیگنال، روی کنسرت بزن.';
+    'سریع یا خنک؟ مقصد را بزن.' :
+    'روی «کنسرت» بزن.';
   if (canBackup(state)) return 'پخش قطع شد · ' + seconds(BLACKOUT_LIMIT - state.blackSeconds) + ' مهلت. روی «کنترل» بزن.';
   if (state.outage && !state.backup.active) return 'پشتیبان تا ' + seconds(state.backup.arrive - state.time) + ' دیگر بالا می‌آید.';
-  if (pilot) return 'روی ایستگاه داغ یا قطع‌شده بزن. پهپاد پس از اعزام باید شارژ شود.';
+  if (pilot) return 'مقصد پهپاد را بزن.';
   if (state.drone.target >= 0) return 'پهپاد در راه «' + NODES[state.drone.target] + '» · ' + seconds(state.drone.arrive - state.time);
   const offline = state.nodes.findIndex((node, id) => node.offline && canDrone(state, id));
-  if (offline !== -1) return '«' + NODES[offline] + '» قطع است. پهپاد را بردار و مقصد را روی نقشه بزن.';
+  if (offline !== -1) return '«' + NODES[offline] + '» قطع است. پهپاد را بفرست.';
   if (repairNote && state.time < repairNote.until) return repairNote.text;
   const due = state.queue[0]?.due;
-  if (due != null) return 'سیگنال فوری · ' + seconds(due - state.time) + ' مهلت. زمان مسیرها را بسنج.';
+  if (due != null) return 'سیگنال فوری · ' + seconds(due - state.time) + ' مهلت.';
   if (route && state.time - route.start < route.duration + 2) {
     const node = state.nodes[route.id], name = NODES[route.id];
     if (node.packet?.id === route.packetId) return 'سیگنال در راه «' + name + '» · ' + seconds(node.work) + ' تا رسیدن';
     if (node.lastDelivery?.id === route.packetId && !node.lastDelivery.timely) {
-      return node.offline ? 'ایستگاه «' + name + '» قطع شد.' : 'سیگنال دیر رسید · برای سیگنال فوری مسیر سریع‌تر بگیر.';
+      return node.offline ? 'ایستگاه «' + name + '» قطع شد.' : 'سیگنال دیر رسید · مسیر سریع‌تر بگیر.';
     }
     return 'سیگنال از مسیر «' + name + '» وارد پخش شد.';
   }
   const event = EVENTS[state.event];
   if (event && state.warned === state.event) return event.label + ' · ' + seconds(event.t - state.time) + ' دیگر';
   if (state.queue.length) {
-    if (state.time < 32) return 'سیگنال تازه رسید. برای سرعت یا خنکی، یک ایستگاه انتخاب کن.';
-    return num(state.queue.length) + ' سیگنال منتظر است · روی ایستگاه آزاد بزن.';
+    if (state.time < 32) return 'سیگنال تازه · مقصد را بزن.';
+    return num(state.queue.length) + ' سیگنال در صف.';
   }
-  if (canNotify(state)) return 'برای حفظ اعتماد، از روی صحنه به تماشاگران خبر بده.';
-  return state.backup.active ? 'پخش پشتیبان برقرار است.' : 'پخش برقرار است.';
+  if (canNotify(state)) return 'به تماشاگران خبر بده.';
+  return '';
 }
 
 function rackHint(node, id, training) {
@@ -78,8 +78,8 @@ function update() {
     state.backup.active ? 'پشتیبان' : state.quality < 70 ? 'ناپایدار' : 'زنده');
   ui.stream.classList.toggle('danger', state.quality < 70);
   set(ui.trust, 'اعتماد ' + num(Math.ceil(state.trust)) + '٪');
-  set(ui.queue, state.queue[0]?.due != null ? 'فوری · ' + seconds(state.queue[0].due - state.time) :
-    'صف ' + num(state.queue.length));
+  ui.queue.dataset.urgent = state.queue[0]?.due != null ? 'true' : 'false';
+  set(ui.queue, state.queue.length ? 'صف ' + num(state.queue.length) : '');
   ui.meter.hidden = !playing;
   ui.dock.hidden = !openMap;
   ui['map-controls'].hidden = !openMap;
@@ -297,11 +297,11 @@ const storyKey = 'arvan-concert-story-seen';
 const video = ui['opening-video'];
 const mediaQuery = matchMedia('(prefers-reduced-motion: reduce)');
 const captions = [
-  'این مسیر روشن، سیگنال کنسرت را به شهر می‌رساند.',
-  'سیگنال را بین ایستگاه‌ها بفرست؛ اگر یکی از کار افتاد، پهپاد را اعزام کن.',
-  'اگر پخش قطع شد، مسیر پشتیبان را روشن کن تا تماشاگران همراه بمانند.',
+  'سیگنال را به شهر برسان.',
+  'ایستگاه قطع شد؟ پهپاد را بفرست.',
+  'پخش قطع شد؟ پشتیبان را روشن کن.',
 ];
-const completeStory = 'سیگنال را بفرست و هفت دقیقه پخش زنده را حفظ کن. اگر ایستگاهی از کار افتاد، پهپاد را بفرست؛ اگر پخش قطع شد، پشتیبان را روشن کن.';
+const completeStory = '۷ دقیقه پخش زنده. ایستگاه قطع شد؟ پهپاد. پخش قطع شد؟ پشتیبان.';
 let loadDeadline;
 let inStory = false;
 let mediaConfigured = false;

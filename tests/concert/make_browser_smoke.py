@@ -40,7 +40,7 @@ setTimeout(()=>{
    }
    if(time===307)check(stage.dataset.broadcast==='backup','backup');
    if(time===31||time===305)press('venue');
-   const urgent=get('queue').textContent.includes('فوری');
+   const urgent=get('queue').dataset.urgent==='true';
    if(time%6===0||urgent||time>=374&&time<402&&time%3===0){
     const target=(urgent?[0,1,2]:[2,1,0]).map(rack)
       .find(el=>el.getAttribute('aria-disabled')==='false'&&el.dataset.status!=='hot');

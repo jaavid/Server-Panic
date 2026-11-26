@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build a downloadable single HTML file that runs without a server or network."""
 import json
+from base64 import b64encode
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
@@ -10,6 +11,10 @@ source_files = ('vendor/three.core.min.js', 'vendor/three.module.min.js',
 data = json.dumps([ (src / f).read_text(encoding='utf-8') for f in source_files ], ensure_ascii=False).replace('<', r'\u003c')
 license_text = (src / 'vendor/LICENSE').read_text(encoding='utf-8')
 css = (src / 'concert.css').read_text(encoding='utf-8')
+for font in sorted((src / 'fonts').glob('*.woff2')):
+    data_url = 'data:font/woff2;base64,' + b64encode(font.read_bytes()).decode('ascii')
+    css = css.replace('./fonts/' + font.name, data_url)
+license_text += '\nNoto Sans Arabic (OFL):\n' + (src/'fonts/OFL.txt').read_text(encoding='utf-8')
 html = (src / 'index.html').read_text(encoding='utf-8')
 boot = '''<script type="module">
 const source = __SOURCE__;

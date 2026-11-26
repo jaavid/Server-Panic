@@ -4,7 +4,7 @@ const {resolve} = require('node:path');
 const {pathToFileURL} = require('node:url');
 const {runInNewContext} = require('node:vm');
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const address = process.env.CONCERT_URL || 'http://127.0.0.1:8771/concert/';
+const address = process.env.CONCERT_URL || 'http://127.0.0.1:8772/concert/';
 const fa = '۰۱۲۳۴۵۶۷۸۹';
 const rack = id => '[data-node="' + id + '"]';
 
@@ -48,6 +48,16 @@ async function visit(context, options = {}) {
     await click('#opening-skip');
   } else await click('#start');
   await step(1, 16);
+  if (options.blocked) await page.locator('#world[data-art=fallback][data-art-failure]').waitFor();
+  else if (!options.noMedia) await page.locator('#world[data-art=blender]').waitFor();
+  else assert.equal(await page.locator('#world').getAttribute('data-art'), 'fallback');
+  const font = await page.evaluate(async () => {
+    const faces = await document.fonts.load('750 16px "Noto Sans Arabic"', 'پخش زنده');
+    return {variable:faces.some(face=>face.weight==='400 800'&&face.status==='loaded'),
+      goal:getComputedStyle(document.getElementById('goal')).fontWeight,
+      hint:getComputedStyle(document.getElementById('guide')).fontWeight};
+  });
+  assert.deepEqual(font,{variable:true, goal:'750', hint:'650'});
   return {page, errors, phase, step, click, ready, elapsed};
 }
 
@@ -112,7 +122,7 @@ async function play(run, kind = 'win', first = 2) {
       await click('#venue');
       informed = true;
     }
-    const urgent = (await page.locator('#queue').textContent()).includes('فوری');
+    const urgent = await page.locator('#queue').getAttribute('data-urgent') === 'true';
     if (time % 6 === 0 || urgent || time >= 374 && time < 402 && time % 3 === 0) {
       for (const target of urgent ? [0, 1, 2] : [2, 1, 0]) {
         const marker = page.locator(rack(target));
@@ -202,12 +212,12 @@ async function packages(browser) {
   const edge = await browser.newContext({viewport:{width:390,height:844}});
   let handler;
   runInNewContext(readFileSync('dist-edge/arvan-shahr-concert.worker.js','utf8'), {
-    addEventListener: (_, fn) => { handler = fn; }, Response, URL,
+    addEventListener: (_, fn) => { handler = fn; }, Response, URL, atob,
   });
   await edge.route('https://concert-edge.test/**', async route => {
     let response;
     handler({request:new Request(route.request().url()),respondWith:value=>{response=value;}});
-    await route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:await response.text()});
+    await route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:Buffer.from(await response.arrayBuffer())});
   });
   await play(await visit(edge,{url:'https://concert-edge.test/',noMedia:true}));
   console.log('Built Edge worker completed local win and replay.');
@@ -231,6 +241,13 @@ async function packages(browser) {
     await play(await visit(mobile,{touch:true}));
     await mobile.close();
     console.log('360×800: complete WebGL mission with touch dispatch, drone targeting, backup and replay.');
+    for (const [width,height] of [[360,800],[1440,900]]) {
+      const blocked = await browser.newContext({viewport:{width,height},hasTouch:width===360,isMobile:width===360});
+      await blocked.route('**/art-preview/audience.glb', route=>route.abort());
+      await play(await visit(blocked,{blocked:true,touch:width===360}),width===360?'win':'blackout');
+      console.log(width+'×'+height+' blocked GLB kept the full procedural mission playable.');
+      await blocked.close();
+    }
     await packages(browser);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

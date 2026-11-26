@@ -7,10 +7,10 @@ Concert Night has its own playable entry at `/concert/` and at `/` in its dedica
 Serve the source worktree from its root.
 
 ```sh
-python3 -m http.server 8771 --bind 127.0.0.1
+python3 -m http.server 8772 --bind 127.0.0.1
 ```
 
-Open [Concert Night](http://127.0.0.1:8771/concert/). The Persian opening explains your role and the goal. Skip is available from the beginning. Tap the concert on the map and choose a relay. The clock starts when you dispatch that first signal. Replay returns to the map. Use the same map buttons on touch or with Tab and Enter.
+Open [Concert Night](http://127.0.0.1:8772/concert/). The Persian opening explains your role and the goal. Skip is available from the beginning. Tap the concert on the map and choose a relay. The clock starts when you dispatch that first signal. Replay returns to the map. Use the same map buttons on touch or with Tab and Enter.
 
 The source and packaged builds display the written story by default. A preview server can set same-origin video and poster URLs through `data-opening-video` and `data-opening-poster` on the root HTML element. Configured media starts muted, with timed story copy. Reduced motion keeps it still until the player chooses Play. The private video and poster are supplied separately by the preview and are absent from the offline and Edge packages.
 
@@ -39,5 +39,7 @@ node tests/concert/browser-flow.cjs
 ```
 
 Set `PLAYWRIGHT_MODULE` if Playwright is installed outside this checkout. Run `node tests/concert/opening-flow.cjs` against a preview server with the eight-second video to verify the actual intro, its controls, and fallback. The opening check runs the real clip and the first live deadline at normal speed. The accelerated mission checks cover both losses, victory, pause, replay, phone and desktop map layouts, offline play without WebGL, and a simulated Edge worker.
+
+Noto Sans Arabic is served from local variable WOFF2 fonts licensed under the SIL Open Font License. Both builds include those public fonts. The preview may optionally set `data-city-art` to a same-origin directory with the matching Three.js loader and seven game GLBs. The private preview assets are outside the packaged input set. A missing, invalid or slow art set falls back to the procedural city. Add `?art=off` for an explicit fallback.
 
 The compiled Edge worker is `dist-edge/arvan-shahr-concert.worker.js`. The local verification runs it without credentials or deployment. The generated offline and Edge packages use the built-in procedural city. Three.js r180 is pinned at upstream commit `0af9729` and included with its MIT license. Physical Android performance and the live Arvan runtime still need separate verification.

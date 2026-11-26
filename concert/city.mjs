@@ -5,6 +5,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export function city(canvas, markers, select) {
   let renderer;
   const stage = canvas.parentElement;
+  canvas.dataset.art = 'fallback';
   function flatMap() {
     stage.dataset.flat = '';
     for (const marker of markers) {
@@ -24,12 +25,16 @@ export function city(canvas, markers, select) {
   }
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   renderer.outputColorSpace = T.SRGBColorSpace;
+  renderer.toneMapping = T.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.10;
   const scene = new T.Scene();
-  scene.background = new T.Color(0x111f38);
-  scene.fog = new T.FogExp2(0x111f38,.017);
-  scene.add(new T.HemisphereLight(0xcde9ff,0x785356,2.35));
-  const sun = new T.DirectionalLight(0xffd9aa,2.1);
+  scene.background = new T.Color(0x0b182c);
+  scene.fog = new T.FogExp2(0x0b182c,.021);
+  scene.add(new T.HemisphereLight(0xb9d9ff,0x6f4a46,2.50));
+  const sun = new T.DirectionalLight(0xffd5a1,2.0);
   sun.position.set(4,10,8); scene.add(sun);
+  const rim = new T.DirectionalLight(0x9fd0ff,.85);
+  rim.position.set(-5,8,-8); scene.add(rim);
   const ortho = new T.OrthographicCamera();
   const look = new T.Vector3(), offset = new T.Vector3();
   let lastW = 0, lastH = 0;
@@ -92,7 +97,11 @@ export function city(canvas, markers, select) {
     box(group,0,2.04,-.04,1.6,.14,1.61,0x5e789d);
     const signal=beacon(group,0,2.25,-.04,.38,0x58e6dd);
     const ring=new T.Mesh(new T.RingGeometry(.9,1.04,20),new T.MeshBasicMaterial({color:0xffd29b,side:T.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=.255; group.add(ring);
-    return {panels,signal,ring};
+    const markers = new T.Group();
+    markers.position.copy(group.position);
+    markers.add(ring, signal);
+    scene.add(markers);
+    return {group, panels, signal, ring};
   });
   const ctrl = new T.Group(); ctrl.position.set(...targets.control); scene.add(ctrl);
   pick(box(ctrl,0,.14,0,3.25,.28,3.2,0x455574),'control');
@@ -107,9 +116,11 @@ export function city(canvas, markers, select) {
     box(scene,x,h/2-.1,z,1.31,h,1.35,0x24395e);
     for(let j=0;j<4;j++) if(.42+j*.52<h) box(scene,x,.42+j*.52,z+.68,.72,.09,.032,0x6d90b8,.23);
   }
-  const drone = new T.Group(); scene.add(drone);
-  box(drone,0,0,0,.55,.21,.39,0xd3dcfa);
-  for(const x of [-.42,.42]) for(const z of [-.30,.30]) {box(drone,x*.6,0,z*.6,.55,.07,.07,0x587489);beacon(drone,x,0,z,.28,0xf5bb67);}
+  const drone = new T.Group(), droneShell = new T.Group();
+  scene.add(drone);
+  drone.add(droneShell);
+  box(droneShell,0,0,0,.55,.21,.39,0xd3dcfa);
+  for(const x of [-.42,.42]) for(const z of [-.30,.30]) {box(droneShell,x*.6,0,z*.6,.55,.07,.07,0x587489);beacon(droneShell,x,0,z,.28,0xf5bb67);}
   const shadow=new T.Mesh(new T.CircleGeometry(.45,12),new T.MeshBasicMaterial({color:0x111d31,transparent:true,opacity:.4}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.25;scene.add(shadow);
   // Project lightweight map controls over the same geometry used for ray picking.
   const paths = POS.map(([x, , z]) => new T.CatmullRomCurve3([
@@ -130,17 +141,127 @@ export function city(canvas, markers, select) {
   // Batch immovable boxes by material; leave raycast proxy geometry in place.
   const animated = new Set([screen,ctrlLight,...bars,...strip,...racks.flatMap(r=>r.panels)]);
   scene.updateMatrixWorld(true);
-  const batches = new Map();
-  scene.traverse(obj=>{
-    if(!obj.isMesh||obj.geometry!==block||animated.has(obj)||obj.parent===drone)return;
-    if(!batches.has(obj.material))batches.set(obj.material,[]);
-    batches.get(obj.material).push(obj);
-  });
-  for(const [material,boxes] of batches){
-    if(boxes.length<3)continue;
-    const batch=new T.InstancedMesh(block,material,boxes.length);
-    boxes.forEach((shape,i)=>{batch.setMatrixAt(i,shape.matrixWorld);shape.visible=false;});
-    scene.add(batch);batch.computeBoundingSphere();
+  const substitutes = [venue, ctrl, ...racks.map(rack => rack.group)];
+  const substituteBatches = new T.Group();
+  scene.add(substituteBatches);
+  for (const [source, target] of [[scene, scene], ...substitutes.map(group => [group, substituteBatches])]) {
+    const batches = new Map();
+    for (const object of source.children) {
+      if (!object.isMesh || object.geometry !== block || animated.has(object)) continue;
+      if (!batches.has(object.material)) batches.set(object.material, []);
+      batches.get(object.material).push(object);
+    }
+    for (const [material, boxes] of batches) {
+      if (boxes.length < 3) continue;
+      const batch = new T.InstancedMesh(block, material, boxes.length);
+      boxes.forEach((object, index) => { batch.setMatrixAt(index, object.matrixWorld); object.visible = false; });
+      target.add(batch);
+      batch.computeBoundingSphere();
+    }
+  }
+
+  let rich = null;
+  const heroFiles = ['courtyard', 'audience', 'Node_Edge', 'Node_Origin', 'Node_Reserve', 'control', 'Drone_Pik'];
+  const configured = document.documentElement.dataset.cityArt;
+  if (configured && new URLSearchParams(location.search).get('art') !== 'off') {
+    const base = new URL(configured, location.href);
+    if (base.origin === location.origin) loadArt(base);
+  }
+
+  async function loadArt(base) {
+    canvas.dataset.art = 'loading';
+    const controller = new AbortController();
+    let timer;
+    const deadline = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error('timeout'));
+      }, 3200);
+    });
+    try {
+      const assets = await Promise.race([prepareArt(base, controller.signal), deadline]);
+      scene.add(assets.venue, assets.control, ...assets.stations);
+      drone.add(assets.drone);
+      for (const substitute of [...substitutes, substituteBatches, droneShell]) substitute.visible = false;
+      rich = assets;
+      canvas.dataset.art = 'blender';
+      canvas.dataset.models = heroFiles.join(',');
+    } catch (error) {
+      controller.abort();
+      canvas.dataset.art = 'fallback';
+      canvas.dataset.artFailure = error.message === 'timeout' ? 'timeout' : 'invalid-or-missing';
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function prepareArt(base, signal) {
+    const {GLTFLoader} = await import(new URL('loaders/GLTFLoader.js', base).href);
+    const loader = new GLTFLoader();
+    const models = await Promise.all(heroFiles.map(async name => {
+      const response = await fetch(new URL(name + '.glb', base), {mode: 'same-origin', signal});
+      if (!response.ok) throw new Error('asset response');
+      const blob = await response.arrayBuffer();
+      const bytes = new DataView(blob);
+      if (blob.byteLength < 24 || bytes.getUint32(0,true) !== 0x46546c67 ||
+          bytes.getUint32(4,true) !== 2 || bytes.getUint32(8,true) !== blob.byteLength ||
+          bytes.getUint32(16,true) !== 0x4e4f534a || bytes.getUint32(12,true) > blob.byteLength - 20) {
+        throw new Error('invalid GLB');
+      }
+      const header = JSON.parse(new TextDecoder().decode(new Uint8Array(blob,20,bytes.getUint32(12,true))));
+      if ((header.buffers ?? []).some(item => item.uri) || (header.images ?? []).some(item => item.uri)) {
+        throw new Error('non-embedded GLB dependency');
+      }
+      const {scene: model} = await loader.parseAsync(blob, '');
+      if (new T.Box3().setFromObject(model).isEmpty()) throw new Error('empty GLB');
+      return model;
+    }));
+    const [venue, audience, edge, origin, reserve, control, flight] = models;
+    const screenMeshes = [];
+    const oldAudience = venue.getObjectByName('Audience');
+    const display = venue.getObjectByName('Broadcast_Display');
+    venue.getObjectByName('Venue_Stage')?.traverse(object => {
+      if (object.isMesh && object.material.name === 'Screen') screenMeshes.push(object);
+    });
+    if (!oldAudience || !display || !screenMeshes.length || !audience.getObjectByName('Game_Audience') ||
+        !venue.getObjectByName('Courtyard_Arcades') || !control.getObjectByName('Game_Control')) throw new Error('asset anchors');
+    oldAudience.visible = false;
+    venue.add(audience);
+    venue.position.set(targets.venue[0], -.05, targets.venue[2]);
+    venue.scale.set(1.13, 1, .76);
+    const stations = [edge, origin, reserve].map((model, id) => fit(model, POS[id], [2.12, 2.30, 2.10]));
+    const stationLights = stations.map(model => signalMeshes(model));
+    if (stationLights.some(lights => !lights.length)) throw new Error('station lights');
+    fit(control, targets.control, [3.1, 2.05, 2.85]);
+    const controlSignals = signalMeshes(control);
+    const controlPalette = {CeramicBlue: 0x416781, Alloy: 0x607d91, DarkPanel: 0x23364b,
+      Roof: 0x2d4c61, Ink: 0x172337, Porcelain: 0x9aaab5};
+    control.traverse(object => {
+      if (object.isMesh && Object.hasOwn(controlPalette, object.material.name)) {
+        object.material = mat(controlPalette[object.material.name]);
+      }
+    });
+    fit(flight, [0, -.18, 0], [1.12, .58, .92]);
+    return {venue, audience, display, screenMeshes, stations, stationLights, control, controlSignals, drone: flight};
+  }
+
+  function signalMeshes(model) {
+    const lamps = [];
+    model.traverse(object => {
+      if (object.isMesh && object.material.name === 'Signal') lamps.push(object);
+    });
+    return lamps;
+  }
+
+  function fit(model, position, limits) {
+    const bounds = new T.Box3().setFromObject(model);
+    const size = bounds.getSize(new T.Vector3());
+    const center = bounds.getCenter(new T.Vector3());
+    const scale = Math.min(limits[0]/size.x, limits[1]/size.y, limits[2]/size.z);
+    if (!(scale > 0 && Number.isFinite(scale))) throw new Error('asset bounds');
+    model.scale.setScalar(scale);
+    model.position.set(position[0]-center.x*scale, position[1]-bounds.min.y*scale, position[2]-center.z*scale);
+    return model;
   }
   const ray = new T.Raycaster(), pointer = new T.Vector2();
   canvas.addEventListener('pointerup', e=>{
@@ -184,11 +305,19 @@ export function city(canvas, markers, select) {
       screen.material=mat(!running?0x22213e:backup?0xffb970:s.quality<70?0xf6989c:0x59e8d4,.55);
       ctrlLight.material=mat(s.backup.arrive&&!backup?0xffc482:backup?0x68f5d4:0x72a5dd,.53);
       bars.forEach((b,i)=>{b.visible=running;b.scale.y=.22+Math.abs(Math.sin(anim*3+i*.76))*.84;});
-      strip.forEach((b,i)=>b.material=mat(!running?0x6e5162:((Math.floor(anim*9)+i)%5===0?0xa0fff2:0x3b9caa),.35));
+      strip.forEach(b=>b.material=mat(!running?0x6e5162:0x3b9caa,.35));
       racks.forEach((r,i)=>{
-        const n=s.nodes[i], c=n.offline?0xcc7285:n.heat>=72?0xffb66d:n.work?0x82aafa:0x5de9d0;
-        r.panels.forEach(p=>p.material=mat(c,.4));r.signal.material=mat(c,.65);r.ring.visible=i===selected;
+        const n=s.nodes[i], c=n.offline?0xf56982:n.heat>=72?0xffa952:n.work?0x84acff:0x59edca;
+        r.panels.forEach(p=>p.material=mat(c,.4));
+        r.signal.material=mat(c,.65);
+        r.ring.visible=i===selected;
+        if (rich) for (const lamp of rich.stationLights[i]) lamp.material = mat(c,.72);
       });
+      if (rich) {
+        rich.display.visible = running;
+        for (const panel of rich.screenMeshes) panel.material = screen.material;
+        for (const lamp of rich.controlSignals) lamp.material = ctrlLight.material;
+      }
       for(let i=0;i<people.length;i++){
         const [x,z,phase]=people[i]; dummy.position.set(x,.36+(running?Math.max(0,Math.sin(anim*3+phase))*.12:0),z);
         dummy.scale.set(.21,.47,.21);dummy.rotation.y=phase;dummy.updateMatrix();crowd.setMatrixAt(i,dummy.matrix);
@@ -212,6 +341,10 @@ export function city(canvas, markers, select) {
       if (pulse.visible) paths[route.id].getPointAt(reduced ? .62 :
         Math.min(1, Math.max(0, (seconds - route.start) / route.duration)), pulse.position);
       renderer.render(scene,ortho);
+      if (canvas.dataset.drawCalls !== String(renderer.info.render.calls)) {
+        canvas.dataset.drawCalls = renderer.info.render.calls;
+        canvas.dataset.triangles = renderer.info.render.triangles;
+      }
     }
   };
 }

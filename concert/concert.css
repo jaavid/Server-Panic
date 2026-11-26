@@ -1,4 +1,22 @@
-:root{color-scheme:dark;--bg:#111f38;--mint:#80f6d9;--gold:#ffce91;--ink:#f2f7ff;--muted:#c0d2e5;font-family:Tahoma,Arial,sans-serif}
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  font-style: normal;
+  font-weight: 400 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('./fonts/noto-sans-arabic-arabic.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  font-style: normal;
+  font-weight: 400 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('./fonts/noto-sans-arabic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+:root{color-scheme:dark;--bg:#111f38;--mint:#80f6d9;--gold:#ffce91;--ink:#f2f7ff;--muted:#c0d2e5;font-family:'Noto Sans Arabic',Tahoma,Arial,sans-serif}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink)}
@@ -80,3 +98,22 @@ body[data-phase=training] .marker.actionable{box-shadow:0 0 0 3px #70ebd037,0 5p
 @media(max-width:599px){
  .mission-dock{padding-bottom:max(23px,env(safe-area-inset-bottom))}
 }
+:root{font-weight:450;font-synthesis:none}
+button,.marker strong{font-weight:650}
+.marker small,.mission-label small,.on-air small,.meter,.eyebrow,.opening-caption{font-weight:450}
+.mission-label strong,.on-air strong,.opening-story h1,.mission-dock #goal,.intro h2{font-weight:750}
+.mission-dock #guide{font-weight:650}
+.hud{background:linear-gradient(#081323f7,#09172900)}
+.mission-label small{letter-spacing:.01em}
+.on-air strong{color:#d4fff0}
+.mission-dock #goal{color:#83ffe0;font-size:.84rem}
+.mission-dock #guide:empty,.meter #queue:empty{display:none}
+.marker{border-radius:5px;border-color:#7190b1;padding-inline:8px}
+.marker strong::before{content:"";display:inline-block;width:.43em;height:.43em;margin-inline-end:.39em;vertical-align:.02em;border:1px solid currentColor;transform:rotate(45deg)}
+.marker.source strong::before{border-radius:50%;transform:none}
+.marker.control strong::before{transform:none}
+.marker.actionable strong::before{background:currentColor}
+.marker.actionable{border-color:#89ffdc;color:#eafff9}
+.marker.control.actionable{border-color:#ffad80}
+.mission-dock.urgent{background:linear-gradient(#351d2200,#251925f2 28%,#191827)}
+#drone{border-color:#e7ba7a;color:#ffe5b8}
