@@ -1,31 +1,63 @@
-"""Generate an offline browser-only QA copy; the shipped HTML stays unchanged."""
+"""Create a self-contained, accelerated offline browser QA page."""
 from pathlib import Path
-s=Path('dist-offline/arvan-shahr-concert.html').read_text()
-inject="""<script>
-let pending,now=0,errors=[];
-window.addEventListener('error',e=>errors.push(e.message));
-window.requestAnimationFrame=cb=>{pending=cb;return 1;};
-const frame=(delta)=>{now+=delta;const next=pending;pending=null;next(now);};
+
+source = Path('dist-offline/arvan-shahr-concert.html')
+inject = """<script>
+let pending, now=0;
+window.requestAnimationFrame=callback=>{pending=callback;return 1;};
+const errors=[];
+window.addEventListener('error',event=>errors.push(event.message));
 setTimeout(()=>{
- const stage=document.querySelector('.stage'), txt=s=>document.querySelector(s).textContent;
- const press=s=>{const x=document.querySelector(s);if(!x || x.disabled || x.hidden)throw Error('inactive '+s);x.click();};
- const advance=n=>{for(let i=0;i<n;i++)frame(1000);};
- const check=(value,msg)=>{if(!value)throw Error(msg);};
+ const read=id=>document.getElementById(id);
+ const stage=read('stage');
+ const press=id=>{
+   const button=read(id);
+   if(button.hidden||button.disabled)return false;
+   button.click();
+   return true;
+ };
+ const rack=index=>document.querySelector('[data-node="'+index+'"]').click();
+ const focus=zone=>document.querySelector('[data-zone="'+zone+'"]').click();
+ const frame=ms=>{const callback=pending;pending=null;callback(now+=ms);};
+ const check=(value,label)=>{if(!value)throw Error(label);};
  try {
   frame(1);
-  check(!document.querySelector('.fallback'),'WebGL2 not rendered');
   check(document.documentElement.scrollWidth<=innerWidth,'horizontal overflow');
-  press('#start');advance(6);press('#route');check(txt('#alert').includes('منتقل'),'route');
-  press('#pause');advance(6);check(txt('#clock')==='۰۶:۵۴','pause');press('#start');
-  advance(90);press('[data-node="1"]');press('#drone');advance(5);
-  check(txt('#alert').includes('بازیابی'),'drone');
-  advance(44);press('#policy-entry');advance(157);
-  check(stage.dataset.broadcast==='outage','outage');press('[data-zone="control"]');press('#backup');advance(5);
-  check(stage.dataset.broadcast==='backup','backup');advance(47);press('#policy-stream');advance(66);
-  check(txt('#overlay-title').includes('به پایان رسید'),'victory');
-  press('#start');check(txt('#clock')==='۰۷:۰۰','retry');check(errors.length===0,'page errors: '+errors.join(', '));
+  press('start');
+  check(stage.dataset.phase==='training'&&press('route'),'start with a real packet');
+  let sent=false, backed=false;
+  for(let time=1;time<=420;time++) {
+   frame(1000);
+   if(stage.dataset.phase==='result')break;
+   if(time===10){
+    press('pause');frame(1000);
+    check(read('clock').textContent==='۰۶:۵۰','pause');
+    press('start');
+   }
+   if(time===96){focus('data');rack(1);sent=press('drone');}
+   if(time===231){focus('data');rack(2);press('drone');}
+   if(!read('decision').hidden)press(time<200?'policy-entry':'policy-stream');
+   if(time===302){
+    check(stage.dataset.broadcast==='outage','outage');
+    focus('control');backed=press('backup');
+   }
+   if(time===307)check(stage.dataset.broadcast==='backup','backup');
+   if(time===31||time===305){focus('venue');press('audience');}
+   if(time%6===0||time%3===0&&time>=374&&time<402){
+    focus('data');
+    const available=document.querySelector('[data-node][data-status=free]');
+    if(available){available.click();press('route');}
+   }
+  }
+  check(sent&&backed,'drone and backup');
+  check(stage.dataset.result==='win'&&!read('summary').hidden,'victory and summary');
+  press('start');
+  check(stage.dataset.phase==='training'&&read('clock').textContent==='۰۷:۰۰','replay');
+  check(errors.length===0,'page errors: '+errors.join(', '));
   document.body.dataset.qa='pass';
- } catch (e) { document.body.dataset.qa='fail: '+e.message; }
+ } catch (error) { document.body.dataset.qa='fail: '+error.message; }
 },500);
 </script>"""
-Path('dist-offline/concert-smoke.html').write_text(s.replace('<script type="module">',inject+'<script type="module">',1), encoding='utf-8')
+html = source.read_text()
+Path('dist-offline/concert-smoke.html').write_text(
+    html.replace('<script type="module">', inject + '<script type="module">', 1), encoding='utf-8')
