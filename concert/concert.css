@@ -21,3 +21,21 @@
   .stage{height:clamp(230px,36vh,380px)}
   .console-top small{font-size:10px}
 }
+body[data-phase=menu] .status,body[data-phase=menu] .brief,body[data-phase=menu] .districts,body[data-phase=menu] .console,
+body[data-phase=training] .status,body[data-phase=training] .brief,body[data-phase=training] .districts,body[data-phase=training] .console,
+body[data-phase=training] .actions-top,body[data-phase=training] .tag{display:none}
+body[data-phase=training] .timer{opacity:.82}
+.first-signal{padding:14px 16px;margin-top:8px;border:1px solid #315b58;border-radius:13px;background:#10243a}
+.first-signal h2{margin:0;font-size:clamp(19px,4vw,26px)}
+.first-signal p{margin:7px 0 12px;font-size:14px;line-height:1.65;color:#d6e7f2}
+.first-signal button{font-size:15px;min-height:48px}
+.opening{max-width:860px;margin:auto;padding:12px 14px 22px}
+.opening-top{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--mint)}
+.opening-story h1{margin:.2rem 0 .45rem;font-size:clamp(27px,5vw,44px)}
+.opening-story p{margin:.55rem 0;line-height:1.7}
+.opening-media{position:relative;margin-block:12px 8px;background:#101c2e;border:1px solid #395467;border-radius:13px;overflow:hidden}
+.opening-media video,.opening-media img{display:block;width:100%;max-height:58dvh;aspect-ratio:16/9;object-fit:contain}
+.opening-video-actions{display:flex;flex-wrap:wrap;gap:6px;padding:5px 8px;background:#11233a}
+.opening-caption{min-height:4em;margin:7px 0 10px;padding:9px 11px;background:#102337;border-inline-start:3px solid var(--mint);line-height:1.65;color:#e0f3ff}
+#opening-continue{font-size:14px}
+#show-opening{margin-inline-start:5px}

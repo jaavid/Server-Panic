@@ -5,7 +5,7 @@ const {pathToFileURL} = require('node:url');
 const {runInNewContext} = require('node:vm');
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 
-const address = process.env.CONCERT_URL || 'http://127.0.0.1:8769/concert/';
+const address = process.env.CONCERT_URL || 'http://127.0.0.1:8770/concert/';
 const real = process.argv.includes('--real');
 const fa = '۰۱۲۳۴۵۶۷۸۹';
 const digit = c => String(fa.indexOf(c));
@@ -44,7 +44,7 @@ async function visit(context, options = {}) {
     };
   });
   await page.goto(options.url || address);
-  await page.locator('#stage[data-phase=menu]').waitFor();
+  await page.locator('#stage:is([data-phase=intro],[data-phase=menu])').waitFor({state:'attached'});
   const frame = (count = 1, milliseconds = 1000) =>
     page.evaluate(([count, milliseconds]) => window.missionFrames(count, milliseconds), [count, milliseconds]);
   const click = selector => page.locator(selector).click({timeout: 2500});
@@ -56,16 +56,17 @@ async function visit(context, options = {}) {
 }
 
 async function play({page, errors, frame, click, phase, elapsed, open}, kind = 'win') {
-  await click(start);
+  if (await phase() === 'intro') await click('#opening-skip');
+  else await click(start);
   assert.equal(await phase(), 'training');
   assert.equal(await elapsed(), 0);
-  assert.ok(await page.locator('#route').isEnabled());
+  assert.ok(await page.locator('#first-signal').isEnabled());
+  assert.equal(await page.locator('#route').isVisible(), false);
   if (!real) {
     await frame(10);
     assert.equal(await elapsed(), 0);
   }
-  if (kind === 'idle') await click('#skip');
-  else await click('#route');
+  await click('#first-signal');
   assert.equal(await phase(), 'playing');
   const started = Date.now();
   let didPause = false, sent = false, cooled = false, restored = false, briefed = false, protectedEntry = false;
@@ -161,7 +162,8 @@ async function play({page, errors, frame, click, phase, elapsed, open}, kind = '
   await click(start);
   assert.equal(await phase(), 'training');
   assert.equal(await elapsed(), 0);
-  assert.ok(await page.locator('#route').isEnabled());
+  assert.ok(await page.locator('#first-signal').isEnabled());
+  assert.equal(await page.locator('#opening').isVisible(), false);
   assert.equal(await page.locator('#summary').isVisible(), false);
 }
 
@@ -181,8 +183,10 @@ async function mobileChecks(browser) {
       viewport: {width, height}, hasTouch: width < 1000, isMobile: width < 1000, deviceScaleFactor: 1,
     });
     const {page, frame, click, open} = await visit(context, {touch: true});
-    await click(start);
-    assert.ok(await fits(page, ['#clock', '#guide', '#detail', '#route', '#skip']), width + ' training layout');
+    await click('#opening-skip');
+    assert.ok(await fits(page, ['#clock', '#first-title', '#first-signal']), width + ' first action layout');
+    if (width < 1000) await page.locator('#first-signal').tap();
+    else await click('#first-signal');
     if (width === 360) {
       assert.equal(await page.locator('.fallback').count(), 0, 'touch test requires WebGL');
       const targets = {
@@ -214,8 +218,6 @@ async function mobileChecks(browser) {
       assert.equal(await page.locator('[data-node="2"]').getAttribute('aria-pressed'), 'true');
     }
     await open('data');
-    if (width < 1000) await page.locator('#route').tap();
-    else await click('#route');
     assert.ok(await fits(page, ['#clock', '#guide', '#detail', '#route', '#drone']), width + ' active layout');
     console.log(width + '×' + height, 'controls in view' + (width === 360 ? '; touch picked all three areas and a rack' : ''));
     await context.close();
@@ -229,7 +231,8 @@ async function packageChecks(browser) {
   const packaged = await visit(offline, {
     url: pathToFileURL(resolve('dist-offline/arvan-shahr-concert.html')).href, noWebGL: true,
   });
-  assert.ok(await packaged.page.locator('.fallback').isVisible());
+  assert.ok(await packaged.page.locator('#opening-continue').isVisible());
+  assert.equal(await packaged.page.locator('#opening-video').getAttribute('src'), null);
   await play(packaged);
   assert.equal(network, 0);
   console.log('offline file: full win and replay, WebGL disabled, zero HTTP requests');
@@ -246,6 +249,8 @@ async function packageChecks(browser) {
     await route.fulfill({status: response.status, headers: Object.fromEntries(response.headers), body: await response.text()});
   });
   const worker = await visit(edge, {url: 'https://concert-edge.test/'});
+  assert.ok(await worker.page.locator('#opening-continue').isVisible());
+  assert.equal(await worker.page.locator('#opening-video').getAttribute('src'), null);
   await play(worker);
   console.log('built Edge worker: full win and replay from intercepted Worker responses');
   await edge.close();

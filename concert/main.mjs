@@ -6,9 +6,11 @@ import {city} from './city.mjs';
 
 const ids = [
   'world', 'stage', 'clock', 'stream', 'trust', 'queue', 'guide', 'alert', 'jump',
-  'selection', 'detail', 'route', 'drone', 'backup', 'audience', 'skip', 'decision',
+  'selection', 'detail', 'route', 'drone', 'backup', 'audience', 'first-step', 'first-signal', 'decision',
   'decision-time', 'node-picks', 'policy-entry', 'policy-stream', 'overlay',
   'overlay-title', 'overlay-kicker', 'overlay-copy', 'summary', 'start', 'pause', 'mute', 'zoom',
+  'opening', 'opening-skip', 'opening-media', 'opening-video', 'opening-play', 'opening-sound',
+  'opening-continue', 'opening-caption', 'opening-still', 'opening-video-actions', 'show-opening',
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 const numbers = new Intl.NumberFormat('fa-IR', {useGrouping: false});
@@ -50,12 +52,11 @@ function seconds(value) {
 }
 
 function guide() {
-  if (phase === 'training') return {
-    text: 'تمرین · «ارسال بسته» را بزن تا ساعت راه بیفتد.',
-    target: 'data', node: 0, label: 'رفتن به دیتاسنتر',
-  };
   if (phase !== 'playing') return {text: phase === 'paused' ? 'زمان و رویدادها در مکث متوقف‌اند.' :
     phase === 'result' ? 'نتیجهٔ این اجرا در گزارش مأموریت است.' : 'یک بسته برای شروع آماده است.'};
+  if (state.time < 6) return {text: state.manualServed ?
+    'سیگنال کنسرت وارد شبکهٔ پخش شد. پخش را تا پایان هفت دقیقه سرپا نگه دار.' :
+    'سیگنال روی مسیر روشن به ایستگاه سپهر می‌رود.'};
   if (canBackup(state)) return {
     text: 'قطع پخش · ' + seconds(BLACKOUT_LIMIT - state.blackSeconds) + ' تا پایان مهلت. پشتیبان را روشن کن.',
     urgent: true, target: 'control', label: 'رفتن به کنترل',
@@ -123,7 +124,7 @@ function zoneStatus() {
 
 function update() {
   const playing = phase === 'playing';
-  const interactive = playing || phase === 'training';
+  const interactive = playing;
   const readyIn = state.drone.ready - state.time;
   set(ui.clock, clock(DURATION - state.time));
   set(ui.stream, phase === 'menu' || phase === 'training' ? 'آماده' : state.quality === 0 ? 'قطع شده' :
@@ -132,6 +133,9 @@ function update() {
   set(ui.trust, num(Math.ceil(state.trust)) + '٪');
   set(ui.queue, num(state.queue.length) + ' بسته');
   set(ui.alert, phase === 'menu' ? 'آمادهٔ شروع مأموریت' : state.alert);
+  ui['first-step'].hidden = phase !== 'training';
+  ui['show-opening'].hidden = phase !== 'menu';
+  document.body.dataset.phase = phase;
   recommendation = guide();
   set(ui.guide, recommendation.text);
   ui.guide.classList.toggle('danger', Boolean(recommendation.urgent));
@@ -148,11 +152,8 @@ function update() {
     el.dataset.status = node.offline ? 'offline' : node.heat >= 75 ? 'hot' : node.work ? 'busy' : 'free';
     set(el, NODES[id] + ' · ' + rackStatus(node));
   });
-  for (const id of ['route', 'drone', 'backup', 'audience', 'skip']) {
-    const button = ui[id];
-    button.hidden = id === 'skip' ? phase !== 'training' :
-      id === 'backup' ? zone !== 'control' : id === 'audience' ? zone !== 'venue' :
-        zone !== 'data' || (id === 'drone' && phase === 'training');
+  for (const id of ['route', 'drone', 'backup', 'audience']) {
+    ui[id].hidden = zone !== (id === 'backup' ? 'control' : id === 'audience' ? 'venue' : 'data');
   }
   ui.route.disabled = !interactive || !canRoute(state, selected);
   ui.drone.disabled = !playing || !canDrone(state, selected);
@@ -227,7 +228,7 @@ function start() {
   ui.summary.hidden = true;
   select('data', 0);
   audioTone();
-  ui.route.focus({preventScroll: true});
+  ui['first-signal'].focus({preventScroll: true});
 }
 
 function startClock() {
@@ -253,11 +254,8 @@ function togglePause() {
 }
 
 function run(action, argument) {
-  if (phase !== 'playing' && !(phase === 'training' && action === 'route')) return;
-  if (command(state, action, argument)) {
-    audioTone(action === 'backup' ? 680 : 410);
-    if (phase === 'training') startClock();
-  }
+  if (phase !== 'playing') return;
+  if (command(state, action, argument)) audioTone(action === 'backup' ? 680 : 410);
   update();
 }
 
@@ -277,7 +275,14 @@ ui.backup.addEventListener('click', () => run('backup'));
 ui.audience.addEventListener('click', () => run('audience'));
 ui['policy-entry'].addEventListener('click', () => run('policy', 'entry'));
 ui['policy-stream'].addEventListener('click', () => run('policy', 'stream'));
-ui.skip.addEventListener('click', () => { if (phase === 'training') startClock(); });
+ui['first-signal'].addEventListener('click', () => {
+  if (phase !== 'training' || !command(state, 'route', 0)) return;
+  set(ui.alert, 'سیگنال کنسرت به ایستگاه سپهر فرستاده شد.');
+  state.alert = ui.alert.textContent;
+  audioTone(520);
+  startClock();
+  ui.guide.focus({preventScroll: true});
+});
 ui.start.addEventListener('click', start);
 ui.pause.addEventListener('click', togglePause);
 ui.mute.addEventListener('click', () => {
@@ -315,9 +320,155 @@ function frame(now) {
       update();
     }
   }
-  view.render(state, selected, zone, state.time + remaining / 1000, animation);
+  view.render(state, selected, zone, state.time + remaining / 1000, animation,
+    phase === 'training' || ((phase === 'playing' || phase === 'paused') && state.time < 6));
   requestAnimationFrame(frame);
 }
+
+const storyKey = 'arvan-concert-story-seen';
+const video = ui['opening-video'];
+const mediaQuery = matchMedia('(prefers-reduced-motion: reduce)');
+const captions = [
+  'این مسیر روشن، سیگنال کنسرت را به شهر می‌رساند.',
+  'سیگنال را بین ایستگاه‌ها بفرست؛ اگر یکی از کار افتاد، پهپاد را اعزام کن.',
+  'اگر پخش قطع شد، مسیر پشتیبان را روشن کن تا تماشاگران همراه بمانند.',
+];
+const completeStory = 'سیگنال را بفرست و هفت دقیقه پخش زنده را حفظ کن. اگر ایستگاهی از کار افتاد، پهپاد را بفرست؛ اگر پخش قطع شد، پشتیبان را روشن کن.';
+let loadDeadline;
+let inStory = false;
+let mediaConfigured = false;
+const videoUrl = document.documentElement.dataset.openingVideo;
+const posterUrl = document.documentElement.dataset.openingPoster;
+
+function saveStory() {
+  try { localStorage.setItem(storyKey, '1'); } catch { /* Sessions without storage still work. */ }
+}
+
+function fallbackStory() {
+  clearTimeout(loadDeadline);
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  video.hidden = true;
+  ui['opening-video-actions'].hidden = true;
+  const still = ui['opening-still'];
+  still.hidden = !posterUrl;
+  if (posterUrl) still.src = posterUrl;
+  ui['opening-media'].hidden = !posterUrl;
+  set(ui['opening-caption'], completeStory);
+  ui['opening-continue'].hidden = false;
+}
+
+function playPauseLabel() {
+  set(ui['opening-play'], video.ended ? 'بازپخش ویدیو' : video.paused ? 'پخش ویدیو' : 'مکث ویدیو');
+}
+
+function watchMedia() {
+  clearTimeout(loadDeadline);
+  loadDeadline = setTimeout(() => {
+    if (inStory && video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) fallbackStory();
+  }, 2200);
+}
+
+function requestVideo() {
+  if (!inStory || !mediaConfigured) return;
+  watchMedia();
+  video.play().catch(error => {
+    if (!inStory || video.hidden) return;
+    if (error.name === 'NotSupportedError') fallbackStory();
+    else {
+      playPauseLabel();
+      set(ui['opening-caption'], completeStory);
+      ui['opening-continue'].hidden = false;
+    }
+  });
+}
+
+function openStory() {
+  inStory = true;
+  phase = 'intro';
+  ui.opening.hidden = false;
+  document.querySelector('.shell').hidden = true;
+  ui['opening-continue'].hidden = true;
+  set(ui['opening-caption'], captions[0]);
+  update();
+  mediaConfigured = Boolean(videoUrl);
+  if (mediaConfigured) {
+    video.hidden = false;
+    ui['opening-still'].hidden = true;
+    ui['opening-video-actions'].hidden = false;
+    video.muted = true;
+    ui['opening-sound'].setAttribute('aria-pressed', 'false');
+    set(ui['opening-sound'], 'روشن کردن صدا');
+    if (posterUrl) video.poster = posterUrl;
+    ui['opening-media'].hidden = false;
+    set(ui['opening-play'], 'پخش ویدیو');
+    video.src = videoUrl;
+    if (mediaQuery.matches) {
+      ui['opening-continue'].hidden = false;
+      set(ui['opening-caption'], completeStory);
+    } else requestVideo();
+  } else fallbackStory();
+  ui['opening-skip'].focus({preventScroll: true});
+}
+
+function leaveStory() {
+  if (!inStory) return;
+  inStory = false;
+  clearTimeout(loadDeadline);
+  saveStory();
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  ui.opening.hidden = true;
+  document.querySelector('.shell').hidden = false;
+  phase = 'menu';
+  start();
+}
+
+ui['opening-skip'].addEventListener('click', leaveStory);
+ui['opening-continue'].addEventListener('click', leaveStory);
+ui['show-opening'].addEventListener('click', openStory);
+ui['opening-play'].addEventListener('click', () => {
+  if (video.paused || video.ended) requestVideo();
+  else video.pause();
+});
+ui['opening-sound'].addEventListener('click', () => {
+  video.muted = !video.muted;
+  ui['opening-sound'].setAttribute('aria-pressed', String(!video.muted));
+  set(ui['opening-sound'], video.muted ? 'روشن کردن صدا' : 'قطع کردن صدا');
+});
+video.addEventListener('playing', () => {
+  clearTimeout(loadDeadline);
+  ui['opening-continue'].hidden = true;
+  playPauseLabel();
+});
+video.addEventListener('pause', () => { clearTimeout(loadDeadline); playPauseLabel(); });
+video.addEventListener('waiting', () => { if (inStory && !video.paused) watchMedia(); });
+ui['opening-still'].addEventListener('error', () => {
+  if (video.hidden) ui['opening-media'].hidden = true;
+});
+video.addEventListener('error', () => {
+  if (inStory && video.hasAttribute('src')) fallbackStory();
+});
+video.addEventListener('timeupdate', () => {
+  if (!inStory || ui['opening-media'].hidden) return;
+  set(ui['opening-caption'], captions[video.currentTime < 2.3 ? 0 : video.currentTime < 5.1 ? 1 : 2]);
+});
+video.addEventListener('ended', () => {
+  if (!inStory) return;
+  saveStory();
+  set(ui['opening-caption'], completeStory);
+  ui['opening-continue'].hidden = false;
+  playPauseLabel();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && inStory) video.pause();
+});
+
+let returning = false;
+try { returning = localStorage.getItem(storyKey) === '1'; } catch { /* Start with the story. */ }
+if (!returning) openStory();
 
 update();
 requestAnimationFrame(frame);

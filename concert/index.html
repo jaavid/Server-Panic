@@ -4,7 +4,24 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a1424"><title>آروان‌شهر: شب کنسرت</title><link rel="stylesheet" href="./concert.css">
 </head>
-<body>
+<body data-phase="menu">
+<section class="opening" id="opening" aria-labelledby="opening-title" hidden>
+ <header class="opening-top"><strong>آروان‌شهر · شب کنسرت</strong><button id="opening-skip">رد کردن مقدمه</button></header>
+ <div class="opening-story">
+  <p class="eyebrow">امشب از آروان‌شهر، پخش زنده داریم</p>
+  <h1 id="opening-title">پخش کنسرت دست توست.</h1>
+  <p>تو مسئول پخش زنده در اتاق کنترل شهری. تماشاگران منتظرند و باید سیگنال کنسرت را به شهر برسانی.</p>
+ </div>
+ <div class="opening-media" id="opening-media" hidden>
+  <video id="opening-video" muted playsinline preload="none" tabindex="-1" aria-label="نمای افتتاحیهٔ آروان‌شهر"></video>
+  <img id="opening-still" alt="نور سیگنال روی محوطهٔ کنسرت و شهر" hidden>
+  <div class="opening-video-actions" id="opening-video-actions">
+   <button id="opening-play">پخش ویدیو</button><button id="opening-sound" aria-pressed="false">روشن کردن صدا</button>
+  </div>
+ </div>
+ <p class="opening-caption" id="opening-caption">این مسیر روشن، سیگنال کنسرت را به شهر می‌رساند.</p>
+ <button class="primary" id="opening-continue" hidden>ورود به اتاق کنترل</button>
+</section>
 <main class="shell">
 <header class="top">
  <div><div class="eyebrow">ایستگاه فرماندهی · مأموریت ۰۱</div><h1>آروان‌شهر <span>شب کنسرت</span></h1></div>
@@ -19,12 +36,17 @@
  <div class="actions-top"><button id="mute" aria-pressed="true">صدا: قطع</button><button id="pause" disabled>مکث</button><button id="zoom" aria-pressed="false">زوم +</button></div>
  <section class="overlay" id="overlay" aria-labelledby="overlay-title"><div class="intro">
  <p class="eyebrow" id="overlay-kicker">زنده از آروان‌شهر</p><h2 id="overlay-title">کنسرت نباید قطع شود.</h2>
- <p id="overlay-copy">پخش زنده را تا پایان هفت دقیقه نگه دار. اول یک بسته به رک بفرست تا زمان مأموریت شروع شود.</p>
- <dl id="summary" class="summary" hidden></dl><button class="primary" id="start">آماده‌سازی پخش</button>
+ <p id="overlay-copy">امشب مسئول پخش زندهٔ کنسرتی. سیگنال را به شهر برسان و پخش را هفت دقیقه سرپا نگه دار.</p>
+ <dl id="summary" class="summary" hidden></dl><button class="primary" id="start">ورود به اتاق کنترل</button><button id="show-opening" type="button">دیدن داستان</button>
  </div></section>
 </div>
+<section class="first-signal" id="first-step" aria-labelledby="first-title" hidden>
+ <h2 id="first-title">اولین سیگنال کنسرت را بفرست</h2>
+ <p>مسیر روشن، صحنه را به شبکهٔ شهر وصل می‌کند. با فرستادن سیگنال، هفت دقیقه فرصت داری پخش زنده را سرپا نگه داری.</p>
+ <button class="primary" id="first-signal">فرستادن سیگنال کنسرت</button>
+</section>
 <section class="brief" aria-label="راهنمای مأموریت">
- <div><p id="guide">یک بسته برای شروع آماده است.</p><p id="alert" role="status">آمادهٔ شروع مأموریت</p></div>
+ <div><p id="guide" tabindex="-1">یک بسته برای شروع آماده است.</p><p id="alert" role="status">آمادهٔ شروع مأموریت</p></div>
  <button id="jump" hidden></button>
 </section>
 <nav class="districts" aria-label="مناطق شهر">
@@ -36,7 +58,6 @@
  <div class="commands" id="commands">
   <button id="route">ارسال بسته</button><button id="drone">اعزام پهپاد</button>
   <button id="backup" hidden>پخش پشتیبان</button><button id="audience" hidden>اطلاع به تماشاگران</button>
-  <button id="skip" hidden>رد کردن تمرین</button>
  </div>
  <div class="decision" id="decision" hidden><span id="decision-time"></span><button id="policy-stream">حفظ پخش</button><button id="policy-entry">تسریع ورود</button><small>حفظ پخش: صف کندتر · تسریع ورود: حاشیهٔ پخش کمتر</small></div>
 </section>

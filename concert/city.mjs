@@ -95,6 +95,20 @@ export function city(canvas, select) {
   box(drone,0,0,0,.55,.21,.39,0xd3dcfa);
   for(const x of [-.42,.42]) for(const z of [-.30,.30]) {box(drone,x*.6,0,z*.6,.55,.07,.07,0x587489);beacon(drone,x,0,z,.28,0xf5bb67);}
   const shadow=new T.Mesh(new T.CircleGeometry(.45,12),new T.MeshBasicMaterial({color:0x111d31,transparent:true,opacity:.4}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.25;scene.add(shadow);
+  // The opening links the concert screen to the first playable rack.
+  const path = new T.CatmullRomCurve3([
+    [-.87, 1.46, 1.47], [-1.63, 1.02, 1.62], [-2.44, .65, 1.58],
+    [-3.72, .43, 1.12], [-4.65, .49, .28], [-4.7, 1.05, -2.02],
+  ].map(point => new T.Vector3(...point)));
+  const openingRoute = new T.Mesh(new T.TubeGeometry(path, 36, .092, 6, false),
+    new T.MeshBasicMaterial({color: 0x68f5d4}));
+  const firstPulse = new T.Mesh(ball, new T.MeshBasicMaterial({color: 0xffe0a3}));
+  const signalSource = new T.Mesh(ball, new T.MeshBasicMaterial({color: 0xa7fff1}));
+  signalSource.scale.setScalar(.44);
+  signalSource.position.copy(path.getPointAt(0));
+  firstPulse.scale.setScalar(.52);
+  openingRoute.visible = firstPulse.visible = signalSource.visible = false;
+  scene.add(openingRoute, signalSource, firstPulse);
   // Batch immovable boxes by material; leave raycast proxy geometry in place.
   const animated = new Set([screen,ctrlLight,...bars,...strip,...racks.flatMap(r=>r.panels)]);
   scene.updateMatrixWorld(true);
@@ -123,7 +137,7 @@ export function city(canvas, select) {
   return {
     focus(zone) { const p=targets[zone]; if(p) anchor.set(p[0]*.38,0,p[2]*.34); else anchor.copy(home); },
     zoom(value) { zoom=value; },
-    render(s,selected,zone,seconds,anim) {
+    render(s,selected,zone,seconds,anim,opening) {
       if(lost) return;
       const w=canvas.clientWidth,h=canvas.clientHeight;
       if(!w||!h)return;
@@ -154,6 +168,9 @@ export function city(canvas, select) {
         drone.rotation.y=-t;
       } else {drone.position.set(6.4,2.23,-.9);drone.rotation.y=0;}
       shadow.position.x=drone.position.x;shadow.position.z=drone.position.z;
+      openingRoute.visible = signalSource.visible = Boolean(opening);
+      firstPulse.visible = Boolean(opening && s.nodes[0].packet && seconds <= 3);
+      if (firstPulse.visible) path.getPointAt(reduced ? .55 : Math.min(1, seconds / 3), firstPulse.position);
       renderer.render(scene,ortho);
     }
   };

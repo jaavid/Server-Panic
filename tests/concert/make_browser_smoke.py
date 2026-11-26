@@ -23,8 +23,9 @@ setTimeout(()=>{
  try {
   frame(1);
   check(document.documentElement.scrollWidth<=innerWidth,'horizontal overflow');
-  press('start');
-  check(stage.dataset.phase==='training'&&press('route'),'start with a real packet');
+  check(stage.dataset.phase==='intro'&&!read('opening-continue').hidden,'story fallback');
+  press('opening-continue');
+  check(stage.dataset.phase==='training'&&press('first-signal'),'start with a real signal');
   let sent=false, backed=false;
   for(let time=1;time<=420;time++) {
    frame(1000);
